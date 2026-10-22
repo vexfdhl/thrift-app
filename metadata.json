@@ -1,0 +1,6 @@
+{
+  "name": "ThriftIt DuvALL | Sustainable Clothing Initiative",
+  "description": "Duval County student sustainability app helping high schoolers discover nearby thrift stores, compare clothing categories & fitting rooms, and calculate eco savings to curb fast fashion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
