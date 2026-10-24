@@ -377,19 +377,17 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
           </button>
 
           {/* Saved Only */}
-          {savedStores.length > 0 && (
-            <button
-              onClick={() => setSavedOnly(!savedOnly)}
-              className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                savedOnly
-                  ? 'bg-[#EFAE6E] text-[#2E1F16] shadow-xs'
-                  : 'bg-[#FBEFD9] text-[#2E1F16]/80 border border-[#2E1F16]/20 hover:border-[#EFAE6E]'
-              }`}
-            >
-              <Heart className={`w-3.5 h-3.5 ${savedOnly ? 'fill-[#2E1F16]' : 'text-[#2E1F16]'}`} />
-              <span>Saved Racks ({savedStores.length})</span>
-            </button>
-          )}
+          <button
+            onClick={() => setSavedOnly(!savedOnly)}
+            className={`px-3.5 py-1.5 rounded-full font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              savedOnly
+                ? 'bg-[#EFAE6E] text-[#2E1F16] shadow-xs'
+                : 'bg-[#FBEFD9] text-[#2E1F16]/80 border border-[#2E1F16]/20 hover:border-[#EFAE6E]'
+            }`}
+          >
+            <Heart className={`w-3.5 h-3.5 ${savedOnly ? 'fill-[#2E1F16]' : 'text-[#2E1F16]'}`} />
+            <span>Saved Racks ({savedStores.length})</span>
+          </button>
 
           {/* Clear Filters */}
           {activeFiltersCount > 0 && (
@@ -422,10 +420,12 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
         {filteredStores.length === 0 ? (
           <div className="col-span-2 clevr-card p-12 text-center bg-[#F7E09A]/20 border border-[#2E1F16]/10 space-y-3">
             <h3 className="font-editorial text-2xl text-[#2E1F16]">
-              No Stores Match Your Filter Criteria
+              {savedOnly && savedStores.length === 0 ? 'No Saved Racks Yet' : 'No Stores Match Your Filter Criteria'}
             </h3>
             <p className="text-xs sm:text-sm text-[#2E1F16]/70 max-w-sm mx-auto">
-              Try adjusting the price tier or toggling off fitting rooms to view all options.
+              {savedOnly && savedStores.length === 0
+                ? 'You currently have 0 stores saved. Tap the heart icon on any thrift store card to save your favorite racks here!'
+                : 'Try adjusting the price tier or toggling off fitting rooms to view all options.'}
             </p>
             <button
               onClick={handleClearFilters}

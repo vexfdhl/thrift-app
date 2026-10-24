@@ -113,7 +113,7 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
     if (navigator.share) {
       navigator.share({
         title: store.name,
-        text: `Check out ${store.name} in Duval County on ThriftIt DuvALL!`,
+        text: `Check out ${store.name} in Duval County on ThriftFit DuvALL!`,
         url: window.location.href,
       }).catch(() => {});
     } else {

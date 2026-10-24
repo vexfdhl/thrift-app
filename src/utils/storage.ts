@@ -1,5 +1,5 @@
 /**
- * Persistent storage and anti-spam utility for ThriftIt DuvALL
+ * Persistent storage and anti-spam utility for ThriftFit DuvALL
  * Synchronizes with localStorage and provides clean validation for Congressional App Challenge judging.
  */
 import { ReviewItem, DUVAL_THRIFT_STORES } from '../data/thriftStores';
@@ -16,28 +16,27 @@ export interface AppFeedbackItem {
 }
 
 const STORAGE_KEYS = {
-  STORE_REVIEWS: 'thriftit_duvall_store_reviews_v2',
-  APP_FEEDBACK: 'thriftit_duvall_app_feedback_v2',
-  LAST_SUBMISSION_TIME: 'thriftit_duvall_last_submit_ts',
-  SAVED_STORES: 'thriftit_duvall_saved_stores_v1',
-  SELECTED_SCHOOL_ID: 'thriftit_duvall_selected_school_id_v1',
-  COMPARE_STORES: 'thriftit_duvall_compare_stores_v1',
+  STORE_REVIEWS: 'thriftfit_duvall_store_reviews_v3',
+  APP_FEEDBACK: 'thriftfit_duvall_app_feedback_v3',
+  LAST_SUBMISSION_TIME: 'thriftfit_duvall_last_submit_ts',
+  SAVED_STORES: 'thriftfit_duvall_saved_stores_v3',
+  SELECTED_SCHOOL_ID: 'thriftfit_duvall_selected_school_id_v2',
+  COMPARE_STORES: 'thriftfit_duvall_compare_stores_v2',
 };
 
 /**
  * Load user's saved/favorite store IDs from localStorage
+ * Defaults to empty array (0 saved racks)
  */
 export function loadPersistedSavedStores(): string[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SAVED_STORES);
     if (!raw) {
-      const defaultFavorites = ['city-thrift-edgewood', 'the-bougie-basket', 'hopes-closet-san-jose'];
-      localStorage.setItem(STORAGE_KEYS.SAVED_STORES, JSON.stringify(defaultFavorites));
-      return defaultFavorites;
+      return [];
     }
     return JSON.parse(raw);
   } catch (e) {
-    return ['city-thrift-edgewood', 'the-bougie-basket'];
+    return [];
   }
 }
 
@@ -106,17 +105,17 @@ export function persistCompareList(ids: string[]): void {
 export const DEFAULT_APP_FEEDBACK: AppFeedbackItem[] = [
   {
     id: 'app-fb-1',
-    author: 'Maya Lin',
+    author: 'Tung Tung Sahur',
     school: 'Riverside High School',
     rating: 5,
     date: 'Oct 14, 2026',
-    comment: 'ThriftIt DuvALL made it so simple to find Bougie Basket right down Edgewood Ave! Our green club used this to outfit 20 students for fall spirit week without buying new polyester.',
+    comment: 'ThriftFit DuvALL made it so simple to find Bougie Basket right down Edgewood Ave! Our green club used this to outfit 20 students for fall spirit week without buying new polyester.',
     suggestion: 'Would love a feature to organize group carpools to the beach stores like BEAM and St. Vincent de Paul!',
     helpfulCount: 24,
   },
   {
     id: 'app-fb-2',
-    author: 'David Chen',
+    author: 'Tralalelo Tralala',
     school: 'Duncan U. Fletcher High School',
     rating: 5,
     date: 'Oct 08, 2026',
@@ -126,7 +125,7 @@ export const DEFAULT_APP_FEEDBACK: AppFeedbackItem[] = [
   },
   {
     id: 'app-fb-3',
-    author: 'Aaliyah Washington',
+    author: 'Skibidi Ohio',
     school: 'Stanton College Preparatory School',
     rating: 5,
     date: 'Sep 29, 2026',
@@ -136,7 +135,7 @@ export const DEFAULT_APP_FEEDBACK: AppFeedbackItem[] = [
   },
   {
     id: 'app-fb-4',
-    author: 'Jordan Ramirez',
+    author: 'Sigma Rizzler',
     school: 'Atlantic Coast High School',
     rating: 5,
     date: 'Sep 22, 2026',

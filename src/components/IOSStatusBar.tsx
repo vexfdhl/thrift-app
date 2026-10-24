@@ -63,7 +63,7 @@ export const IOSStatusBar: React.FC<IOSStatusBarProps> = ({
             </div>
             {islandExpanded && (
               <span className="text-[10px] font-bold text-emerald-400 tracking-tight truncate max-w-[120px]">
-                {islandText || 'ThriftIt DuvALL'}
+                {islandText || 'ThriftFit DuvALL'}
               </span>
             )}
           </div>

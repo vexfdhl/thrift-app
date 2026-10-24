@@ -47,6 +47,7 @@ export interface ThriftStoreItem {
   overallSummary: string;
   nearestSchoolIds: string[];
   reviews: ReviewItem[];
+  published?: boolean;
 }
 
 export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
@@ -87,7 +88,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-svdp-1',
-        author: 'Marcus T.',
+        author: 'Tung Tung Sahur',
         school: 'Duncan U. Fletcher High School',
         rating: 5,
         date: 'Oct 12, 2026',
@@ -97,7 +98,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
       },
       {
         id: 'rev-svdp-2',
-        author: 'Elena R.',
+        author: 'Tralalelo Tralala',
         school: 'Duncan U. Fletcher High School',
         rating: 4,
         date: 'Sep 28, 2026',
@@ -144,7 +145,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-gh-1',
-        author: 'Chloe S.',
+        author: 'Skibidi Ohio',
         school: 'Duncan U. Fletcher High School',
         rating: 5,
         date: 'Oct 02, 2026',
@@ -191,7 +192,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-bb-1',
-        author: 'Maya K.',
+        author: 'Sigma Rizzler',
         school: 'Riverside High School',
         rating: 5,
         date: 'Oct 08, 2026',
@@ -201,7 +202,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
       },
       {
         id: 'rev-bb-2',
-        author: 'Darnell W.',
+        author: 'Balerina Capuchina',
         school: 'Paxon School for Advanced Studies',
         rating: 4,
         date: 'Sep 15, 2026',
@@ -248,7 +249,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-5p-1',
-        author: 'Jordan L.',
+        author: 'Mewing Maestro',
         school: 'Stanton College Preparatory School',
         rating: 4,
         date: 'Oct 04, 2026',
@@ -295,7 +296,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-fifi-1',
-        author: 'Brianna M.',
+        author: 'Fanum Taxer',
         school: 'Douglas Anderson School of the Arts',
         rating: 5,
         date: 'Oct 14, 2026',
@@ -342,7 +343,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-spec-1',
-        author: 'Alex P.',
+        author: 'Baby Gronk',
         school: 'Mandarin High School',
         rating: 5,
         date: 'Oct 01, 2026',
@@ -389,7 +390,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-bg-1',
-        author: 'Sarah T.',
+        author: 'Grimace Shake',
         school: 'Mandarin High School',
         rating: 4,
         date: 'Sep 21, 2026',
@@ -436,7 +437,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-bb-bal-1',
-        author: 'Cody M.',
+        author: 'Kai Cenat Jr.',
         school: 'Baldwin Middle-High School',
         rating: 5,
         date: 'Oct 10, 2026',
@@ -483,7 +484,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-ct-1',
-        author: 'Tasha J.',
+        author: 'Livvy Drip',
         school: 'Paxon School for Advanced Studies',
         rating: 5,
         date: 'Sep 29, 2026',
@@ -530,7 +531,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-lb-1',
-        author: 'Kendrick B.',
+        author: 'Quandale Dingle',
         school: 'William M. Raines High School',
         rating: 5,
         date: 'Oct 07, 2026',
@@ -577,7 +578,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-mht-1',
-        author: 'Zoe C.',
+        author: 'Chungus Supreme',
         school: 'Riverside High School',
         rating: 5,
         date: 'Oct 11, 2026',
@@ -624,7 +625,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-hh-1',
-        author: 'Daniela V.',
+        author: 'Sussy Baka',
         school: 'Englewood High School',
         rating: 5,
         date: 'Oct 05, 2026',
@@ -671,7 +672,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-pc-1',
-        author: 'Tyler G.',
+        author: 'Subo Subo',
         school: 'Atlantic Coast High School',
         rating: 4,
         date: 'Sep 18, 2026',
@@ -718,7 +719,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-uc-1',
-        author: 'Samantha P.',
+        author: 'Amogus Drip',
         school: 'Mandarin High School',
         rating: 5,
         date: 'Oct 09, 2026',
@@ -765,7 +766,7 @@ export const DUVAL_THRIFT_STORES: ThriftStoreItem[] = [
     reviews: [
       {
         id: 'rev-beam-1',
-        author: 'Lucas D.',
+        author: 'Rizzler Prime',
         school: 'Duncan U. Fletcher High School',
         rating: 5,
         date: 'Oct 13, 2026',

@@ -523,10 +523,10 @@ export const FieldGuideVisual: React.FC<{ className?: string }> = ({ className =
       <rect x="30" y="60" width="120" height="110" rx="8" fill="#FFFFFF" stroke="#2E1F16" strokeWidth="3" />
       {/* Handles */}
       <path d="M60 60 C60 15 120 15 120 60" fill="none" stroke="#2E1F16" strokeWidth="4" />
-      {/* ThriftIt Logo on Tote */}
+      {/* ThriftFit Logo on Tote */}
       <path d="M90 90 L102 110 L78 110 Z" fill="#C1D7C2" />
       <circle cx="90" cy="100" r="3" fill="#2E1F16" />
-      <text x="65" y="125" fontSize="10" fontWeight="bold" fill="#2E1F16" letterSpacing="0.8">THRIFTIT</text>
+      <text x="63" y="125" fontSize="9.5" fontWeight="bold" fill="#2E1F16" letterSpacing="0.8">THRIFTFIT</text>
       {/* Yellow Cloth Measuring Tape draped out of bag */}
       <path d="M40 70 Q 20 110 30 150 Q 40 180 20 200" fill="none" stroke="#F7E09A" strokeWidth="10" strokeLinecap="round" />
       <path d="M40 70 Q 20 110 30 150 Q 40 180 20 200" fill="none" stroke="#2E1F16" strokeWidth="1" strokeDasharray="2,3" />

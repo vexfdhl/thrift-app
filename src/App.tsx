@@ -33,7 +33,10 @@ import {
   ThumbsUp,
   Award,
   BookOpen,
-  Eye
+  Eye,
+  Smartphone,
+  Video as VideoIcon,
+  ShieldCheck
 } from 'lucide-react';
 import { ThriftLogo } from './components/ThriftLogo';
 import { DUVAL_SCHOOLS, SchoolItem } from './data/schools';
@@ -50,6 +53,9 @@ import { RecommendationsSection } from './components/RecommendationsSection';
 import { QuickPeekModal } from './components/QuickPeekModal';
 import { InteractiveFitFinder } from './components/InteractiveFitFinder';
 import { CampusSwitcherBar } from './components/CampusSwitcherBar';
+import { AdminPortalModal } from './components/AdminPortalModal';
+import { VideoGuideModal } from './components/VideoGuideModal';
+import { IOSStatusBar } from './components/IOSStatusBar';
 import {
   HeroThriftShowcase,
   StoreCardVisual,
@@ -76,6 +82,13 @@ import {
   loadPersistedCompareList,
   persistCompareList
 } from './utils/storage';
+import {
+  seedInitialStoresIfEmpty,
+  subscribeToStores,
+  subscribeToReviews,
+  createReview,
+  FirestoreReviewItem
+} from './lib/firebase';
 
 type ViewMode = 'home' | 'map' | 'directory' | 'detail' | 'reviews' | 'about';
 
@@ -119,6 +132,9 @@ export default function App() {
   // Modal dialog states
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isFavoritesModalOpen, setIsFavoritesModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isVideoGuideOpen, setIsVideoGuideOpen] = useState(false);
+  const [isPhoneSimulatorMode, setIsPhoneSimulatorMode] = useState(false);
   const [quickPeekStore, setQuickPeekStore] = useState<ThriftStoreItem | null>(null);
   const [isQuickPeekOpen, setIsQuickPeekOpen] = useState(false);
   const [maxRadius, setMaxRadius] = useState<number>(30);
@@ -128,14 +144,62 @@ export default function App() {
     setIsQuickPeekOpen(true);
   };
 
-  // Initialize store state with persisted reviews from localStorage
-  const [stores, setStores] = useState<ThriftStoreItem[]>(() => {
+  // Raw stores from Firestore (including unpublished/draft stores for admin view)
+  const [rawStores, setRawStores] = useState<ThriftStoreItem[]>(() => {
     const persistedReviewsMap = loadPersistedStoreReviews(DUVAL_THRIFT_STORES);
     return DUVAL_THRIFT_STORES.map(st => ({
       ...st,
+      published: true,
       reviews: persistedReviewsMap[st.id] || st.reviews,
     }));
   });
+
+  // All reviews from Firestore (including pending and hidden for admin moderation)
+  const [allFirestoreReviews, setAllFirestoreReviews] = useState<FirestoreReviewItem[]>([]);
+
+  // Real-time synchronization with Firebase Firestore
+  useEffect(() => {
+    // Prime Firestore with initial Duval thrift stores if collection is empty
+    seedInitialStoresIfEmpty();
+
+    // Subscribe to stores directory
+    const unsubStores = subscribeToStores(
+      (firestoreStores) => {
+        if (firestoreStores.length > 0) {
+          setRawStores(firestoreStores);
+        }
+      },
+      (err) => console.warn('Stores subscription notice:', err)
+    );
+
+    // Subscribe to community reviews
+    const unsubReviews = subscribeToReviews(
+      (firestoreReviews) => {
+        setAllFirestoreReviews(firestoreReviews);
+      },
+      (err) => console.warn('Reviews subscription notice:', err)
+    );
+
+    return () => {
+      unsubStores();
+      unsubReviews();
+    };
+  }, []);
+
+  // Public stores: Only published stores with approved community reviews
+  const stores = useMemo<ThriftStoreItem[]>(() => {
+    return rawStores
+      .filter(st => st.published !== false)
+      .map(st => {
+        const approvedFromFirestore = allFirestoreReviews.filter(
+          r => r.storeId === st.id && r.status === 'approved'
+        );
+        return {
+          ...st,
+          reviews: approvedFromFirestore.length > 0 ? approvedFromFirestore : st.reviews,
+        };
+      });
+  }, [rawStores, allFirestoreReviews]);
 
   // App-wide community feedback loaded from localStorage
   const [appFeedbackList, setAppFeedbackList] = useState<AppFeedbackItem[]>(() => {
@@ -234,23 +298,40 @@ export default function App() {
     showToast('Comparison list cleared.');
   };
 
-  const handleAddStoreReview = (storeId: string, review: ReviewItem) => {
+  const handleAddStoreReview = async (storeId: string, review: ReviewItem) => {
     persistStoreReview(storeId, review);
-    setStores(prev =>
-      prev.map(st => {
-        if (st.id === storeId) {
-          return {
-            ...st,
-            reviews: [review, ...st.reviews],
-          };
-        }
-        return st;
-      })
-    );
+
+    try {
+      await createReview({
+        id: review.id,
+        storeId,
+        author: review.author,
+        school: review.school,
+        rating: review.rating,
+        date: review.date,
+        comment: review.comment,
+        tags: review.tags,
+        helpfulCount: review.helpfulCount || 0,
+        status: 'approved',
+      });
+    } catch (err) {
+      console.warn('Firestore review write deferred:', err);
+    }
+
     if (selectedStore && selectedStore.id === storeId) {
       setSelectedStore(prev => (prev ? { ...prev, reviews: [review, ...prev.reviews] } : null));
     }
   };
+
+  // Sync selectedStore when stores list updates from Firestore
+  useEffect(() => {
+    if (selectedStore) {
+      const refreshed = stores.find(s => s.id === selectedStore.id);
+      if (refreshed) {
+        setSelectedStore(refreshed);
+      }
+    }
+  }, [stores]);
 
   const handleAddAppFeedback = (feedback: AppFeedbackItem) => {
     const updated = persistAppFeedback(feedback);
@@ -309,7 +390,7 @@ export default function App() {
     },
     {
       title: 'Check Fitting Rooms Ahead of Time',
-      description: 'Several independent shops closed dressing rooms post-pandemic. ThriftIt DuvALL verifies open dressing rooms so you can try on pieces before buying.',
+      description: 'Several independent shops closed dressing rooms post-pandemic. ThriftFit DuvALL verifies open dressing rooms so you can try on pieces before buying.',
     },
     {
       title: 'Homecoming & Prom Hack',
@@ -323,14 +404,39 @@ export default function App() {
   const co2Prevented = (calculatorItems * 8.2).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-[#FBEFD9] text-[#2E1F16] font-['Nunito',sans-serif] flex flex-col selection:bg-[#C1D7C2] selection:text-[#2E1F16]">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-20 md:bottom-8 right-4 sm:right-6 z-50 bg-[#2E1F16] text-[#FBEFD9] px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 animate-fade-in border border-[#EFAE6E]/40">
-          <Check className="w-4 h-4 text-[#EFAE6E] stroke-[3]" />
-          <span>{toastMessage}</span>
+    <div className={`min-h-screen ${isPhoneSimulatorMode ? 'bg-[#18110D] py-4 sm:py-8 px-2 sm:px-4' : 'bg-[#FBEFD9]'} text-[#2E1F16] font-['Nunito',sans-serif] flex flex-col selection:bg-[#C1D7C2] selection:text-[#2E1F16]`}>
+      {/* Phone Simulator Floating Control Banner */}
+      {isPhoneSimulatorMode && (
+        <div className="max-w-[430px] mx-auto mb-3 bg-[#2E1F16] text-[#FBEFD9] px-4 py-2 rounded-2xl flex items-center justify-between shadow-xl border border-[#EFAE6E]/50 text-xs w-full shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold">📱 Duval Student iPhone View</span>
+          </div>
+          <button
+            onClick={() => setIsPhoneSimulatorMode(false)}
+            className="px-2.5 py-1 bg-[#EFAE6E] text-[#2E1F16] rounded-xl font-black text-[11px] hover:bg-[#e5a05b] cursor-pointer"
+          >
+            Exit Phone View
+          </button>
         </div>
       )}
+
+      {/* Main Container / Phone Mockup Frame */}
+      <div className={isPhoneSimulatorMode ? 'max-w-[430px] mx-auto w-full bg-[#FBEFD9] rounded-[48px] border-[10px] border-[#2E1F16] shadow-2xl overflow-hidden flex flex-col relative min-h-[860px]' : 'w-full flex flex-col flex-1'}>
+        {isPhoneSimulatorMode && (
+          <IOSStatusBar
+            islandText="ThriftFit DuvALL"
+            onIslandClick={() => showToast('ThriftFit Dynamic Island · FL-04')}
+          />
+        )}
+
+        {/* Toast Notification */}
+        {toastMessage && (
+          <div className="fixed bottom-20 md:bottom-8 right-4 sm:right-6 z-50 bg-[#2E1F16] text-[#FBEFD9] px-4 py-3 rounded-xl shadow-xl text-xs font-bold flex items-center gap-2 animate-fade-in border border-[#EFAE6E]/40">
+            <Check className="w-4 h-4 text-[#EFAE6E] stroke-[3]" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
 
       {/* Compare Modal */}
       <CompareModal
@@ -368,6 +474,22 @@ export default function App() {
         onToggleSave={(id) => handleToggleSaveStore(id)}
         isCompared={quickPeekStore ? compareStoreIds.includes(quickPeekStore.id) : false}
         onToggleCompare={(id) => handleToggleCompareStore(id)}
+      />
+
+      {/* Teacher & District Admin Portal Modal */}
+      <AdminPortalModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        stores={rawStores}
+        allReviews={allFirestoreReviews}
+        onToast={showToast}
+      />
+
+      {/* Competition Presentation & Video Guide Modal */}
+      <VideoGuideModal
+        isOpen={isVideoGuideOpen}
+        onClose={() => setIsVideoGuideOpen(false)}
+        onToast={showToast}
       />
 
       {/* 1. TOP ANNOUNCEMENT BAR */}
@@ -440,11 +562,49 @@ export default function App() {
           </nav>
 
           {/* Zone 3: Interactive Action Cluster */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Phone View Simulator Toggle */}
+            <button
+              onClick={() => {
+                const nextMode = !isPhoneSimulatorMode;
+                setIsPhoneSimulatorMode(nextMode);
+                showToast(nextMode ? '📱 Switched to Phone Simulator View' : '💻 Switched to Full Desktop View');
+              }}
+              className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
+                isPhoneSimulatorMode
+                  ? 'bg-[#EFAE6E] text-[#2E1F16] border-[#2E1F16]/30 shadow-xs'
+                  : 'bg-[#C1D7C2]/50 hover:bg-[#C1D7C2] text-[#2E1F16] border-[#2E1F16]/15'
+              }`}
+              title="Toggle iPhone Phone Simulator"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>{isPhoneSimulatorMode ? 'Exit Phone' : 'Phone View'}</span>
+            </button>
+
+            {/* Admin Portal Button */}
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#F7E09A]/50 hover:bg-[#F7E09A] px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer"
+              title="Teacher & District Admin Portal"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2E1F16]" />
+              <span>Admin</span>
+            </button>
+
+            {/* Video Script Guide Button */}
+            <button
+              onClick={() => setIsVideoGuideOpen(true)}
+              className="hidden xl:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#EFAE6E]/30 hover:bg-[#EFAE6E]/60 px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer"
+              title="Competition Video Presentation Script & Rubric Guide"
+            >
+              <VideoIcon className="w-3.5 h-3.5 text-[#2E1F16]" />
+              <span>Video Script</span>
+            </button>
+
             {/* Compare Pill */}
             <button
               onClick={() => setIsCompareModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] cursor-pointer bg-[#F7E09A]/40 hover:bg-[#F7E09A]/70 px-3 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] cursor-pointer bg-[#F7E09A]/40 hover:bg-[#F7E09A]/70 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors"
               title="Compare selected stores side-by-side"
             >
               <Scale className="w-3.5 h-3.5" />
@@ -457,7 +617,7 @@ export default function App() {
             {/* Saved Stores Pill */}
             <button
               onClick={() => setIsFavoritesModalOpen(true)}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] cursor-pointer bg-[#F7E09A]/40 hover:bg-[#F7E09A]/70 px-3 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] cursor-pointer bg-[#F7E09A]/40 hover:bg-[#F7E09A]/70 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors"
               title="View saved thrift racks"
             >
               <Heart
@@ -474,7 +634,7 @@ export default function App() {
             {/* Surprise Me Button */}
             <button
               onClick={handleRandomStore}
-              className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16]/80 hover:text-[#2E1F16] px-2.5 py-1.5 rounded-full hover:bg-[#F7E09A]/40 cursor-pointer transition-colors"
+              className="hidden 2xl:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16]/80 hover:text-[#2E1F16] px-2.5 py-1.5 rounded-full hover:bg-[#F7E09A]/40 cursor-pointer transition-colors"
               title="Pick a random store"
             >
               <Shuffle className="w-3.5 h-3.5" />
@@ -521,7 +681,55 @@ export default function App() {
                 </button>
               );
             })}
-            <div className="grid grid-cols-2 gap-2 pt-2">
+
+            <div className="pt-2 border-t border-[#2E1F16]/10 space-y-2">
+              <button
+                onClick={() => {
+                  setIsPhoneSimulatorMode(!isPhoneSimulatorMode);
+                  setIsMobileMenuOpen(false);
+                  showToast(!isPhoneSimulatorMode ? '📱 Switched to Phone Simulator View' : '💻 Switched to Full Desktop View');
+                }}
+                className="w-full text-left p-2.5 rounded-xl bg-[#C1D7C2]/40 text-[#2E1F16] font-bold flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4" />
+                  <span>Phone Simulator Mode</span>
+                </div>
+                <span className="text-[10px] bg-[#2E1F16] text-[#FBEFD9] px-2 py-0.5 rounded-full uppercase">
+                  {isPhoneSimulatorMode ? 'ON' : 'OFF'}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsAdminModalOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left p-2.5 rounded-xl bg-[#F7E09A]/40 text-[#2E1F16] font-bold flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Teacher &amp; District Admin Portal</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-[#2E1F16]/50" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsVideoGuideOpen(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full text-left p-2.5 rounded-xl bg-[#EFAE6E]/30 text-[#2E1F16] font-bold flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <VideoIcon className="w-4 h-4" />
+                  <span>Competition Video Script &amp; Rubric</span>
+                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-[#2E1F16]/50" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1">
               <button
                 onClick={() => {
                   setIsFavoritesModalOpen(true);
@@ -1138,7 +1346,7 @@ export default function App() {
                         Verified Fitting Rooms
                       </h3>
                       <p className="text-xs text-[#2E1F16]/80 leading-relaxed font-normal">
-                        Nothing is more frustrating than driving to a store only to find dressing rooms closed. ThriftIt DuvALL checks and lists dressing room availability for every location.
+                        Nothing is more frustrating than driving to a store only to find dressing rooms closed. ThriftFit DuvALL checks and lists dressing room availability for every location.
                       </p>
                     </div>
                   </div>
@@ -1337,7 +1545,7 @@ export default function App() {
                         <MarcusAvatar className="w-full h-full object-cover" />
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-sm text-[#2E1F16]">Marcus T.</div>
+                        <div className="font-bold text-sm text-[#2E1F16]">Tung Tung Sahur</div>
                         <div className="text-[11px] text-[#2E1F16]/60">Duncan U. Fletcher High School · 12th Grade</div>
                       </div>
                     </div>
@@ -1346,14 +1554,14 @@ export default function App() {
                   {/* Testimonial 2 */}
                   <div className="clevr-card p-6 bg-[#F7E09A]/30 border border-[#2E1F16]/10 flex flex-col justify-between space-y-6">
                     <p className="font-editorial-italic text-lg text-[#2E1F16] leading-snug">
-                      “Our environmental club used ThriftIt to map City Thrift down Edgewood Ave. Outfitted 15 members for spirit week without buying fast fashion!”
+                      “Our environmental club used ThriftFit to map City Thrift down Edgewood Ave. Outfitted 15 members for spirit week without buying fast fashion!”
                     </p>
                     <div className="space-y-3">
                       <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden bg-[#FBEFD9] border border-[#2E1F16]/10">
                         <MayaAvatar className="w-full h-full object-cover" />
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-sm text-[#2E1F16]">Maya Lin</div>
+                        <div className="font-bold text-sm text-[#2E1F16]">Tralalelo Tralala</div>
                         <div className="text-[11px] text-[#2E1F16]/60">Riverside High School · Green Club Leader</div>
                       </div>
                     </div>
@@ -1369,7 +1577,7 @@ export default function App() {
                         <ElenaAvatar className="w-full h-full object-cover" />
                       </div>
                       <div className="text-center">
-                        <div className="font-bold text-sm text-[#2E1F16]">Elena R.</div>
+                        <div className="font-bold text-sm text-[#2E1F16]">Skibidi Ohio</div>
                         <div className="text-[11px] text-[#2E1F16]/60">Stanton College Prep · Junior</div>
                       </div>
                     </div>
@@ -1688,8 +1896,8 @@ export default function App() {
       </main>
 
       {/* 3. FOOTER CONTAINER */}
-      <footer className="w-full bg-[#2E1F16] px-4 sm:px-8 pb-10 text-[#2E1F16]">
-        <div className="max-w-7xl mx-auto bg-[#FBEFD9] rounded-t-3xl sm:rounded-t-[40px] p-8 sm:p-14 space-y-12 shadow-2xl">
+      <footer className="w-full bg-[#2E1F16] px-4 sm:px-8 py-10 sm:py-16 pb-28 sm:pb-20 text-[#2E1F16]">
+        <div className="max-w-7xl mx-auto bg-[#FBEFD9] rounded-3xl sm:rounded-[36px] p-8 sm:p-14 space-y-12 shadow-2xl border border-[#FBEFD9]/20">
           {/* Top Row: Newsletter + 4 Columns */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
             {/* Left: Student Discount Alerts Newsletter */}
@@ -1750,7 +1958,7 @@ export default function App() {
                   <li><button onClick={() => setCurrentView('map')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Interactive Map</button></li>
                   <li><button onClick={() => setCurrentView('about')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">About Mission</button></li>
                   <li><button onClick={() => setCurrentView('reviews')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Student Reviews</button></li>
-                  <li><button onClick={() => setCurrentView('about')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Eco Calculations</button></li>
+                  <li><button onClick={() => setIsVideoGuideOpen(true)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors font-bold text-[#EFAE6E]">🎬 Video Script</button></li>
                 </ul>
               </div>
 
@@ -1760,20 +1968,15 @@ export default function App() {
                   <li><button onClick={() => setIsCompareModalOpen(true)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Compare Stores</button></li>
                   <li><button onClick={() => setIsFavoritesModalOpen(true)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Saved Racks</button></li>
                   <li><button onClick={handleRandomStore} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Random Store</button></li>
-                  <li><button onClick={() => {
-                    if (searchInputRef.current) {
-                      setCurrentView('home');
-                      searchInputRef.current.focus();
-                    }
-                  }} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">High School Lookup</button></li>
+                  <li><button onClick={() => setIsPhoneSimulatorMode(!isPhoneSimulatorMode)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors font-bold">📱 {isPhoneSimulatorMode ? 'Exit Phone Mode' : 'Phone Simulator'}</button></li>
                 </ul>
               </div>
 
               <div className="space-y-3">
-                <div className="font-bold text-sm text-[#2E1F16]">Community</div>
+                <div className="font-bold text-sm text-[#2E1F16]">Admin &amp; District</div>
                 <ul className="space-y-2 text-[#2E1F16]/75">
-                  <li><button onClick={() => setCurrentView('reviews')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Leave App Feedback</button></li>
-                  <li><button onClick={() => showToast('Shared ThriftIt DuvALL link!')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Share With Friends</button></li>
+                  <li><button onClick={() => setIsAdminModalOpen(true)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors font-bold text-[#2E1F16]">🛡️ District Admin Portal</button></li>
+                  <li><button onClick={() => showToast('Shared ThriftFit DuvALL link!')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Share With Friends</button></li>
                   <li><button onClick={() => showToast('Student club partnerships welcome!')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">High School Clubs</button></li>
                   <li><button onClick={() => showToast('Donations support local Duval families')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Donation Guide</button></li>
                 </ul>
@@ -1789,18 +1992,28 @@ export default function App() {
           {/* Bottom Copyright and Links */}
           <div className="flex flex-col sm:flex-row items-center justify-between text-[11px] text-[#2E1F16]/60 pt-6 border-t border-[#2E1F16]/10 gap-2 font-normal">
             <div>
-              © 2026 ThriftIt DuvALL · Duval County Student Secondhand &amp; Sustainable Fashion Network
+              © 2026 ThriftFit DuvALL · Duval County Student Secondhand &amp; Sustainable Fashion Network
             </div>
             <div className="flex items-center gap-4">
               <span onClick={() => setCurrentView('about')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">About Mission</span>
               <span>·</span>
               <span onClick={() => setCurrentView('reviews')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Student Feedback</span>
               <span>·</span>
-              <span onClick={() => setCurrentView('map')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Duval County Cartography</span>
+              <span onClick={() => setIsAdminModalOpen(true)} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Teacher Portal</span>
+              <span>·</span>
+              <span onClick={() => setCurrentView('map')} className="hover:text-[#EFAE6E] cursor-pointer transition-colors">Duval Cartography</span>
             </div>
           </div>
         </div>
       </footer>
+
+        {/* iOS Home Indicator Bar when in simulator mode */}
+        {isPhoneSimulatorMode && (
+          <div className="w-full py-2.5 bg-[#2E1F16] flex justify-center shrink-0">
+            <div className="w-32 h-1 bg-white/40 rounded-full" />
+          </div>
+        )}
+      </div>
 
       {/* MOBILE STICKY BOTTOM DOCK */}
       <MobileBottomDock

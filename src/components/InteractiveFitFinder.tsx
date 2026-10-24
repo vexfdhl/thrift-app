@@ -86,8 +86,10 @@ const VIBES: VibeOption[] = [
 interface OutfitPiece {
   id: string;
   name: string;
-  retailPrice: number;
-  thriftPrice: number;
+  retailMin: number;
+  retailMax: number;
+  thriftMin: number;
+  thriftMax: number;
   waterGallons: number;
   selected: boolean;
 }
@@ -105,12 +107,12 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
   const [activeVibe, setActiveVibe] = useState<VibeId>('y2k');
   const [comparisonMode, setComparisonMode] = useState<'thrift' | 'retail'>('thrift');
 
-  // Interactive outfit piece toggles
+  // Interactive outfit piece toggles with realistic price ranges
   const [outfitPieces, setOutfitPieces] = useState<OutfitPiece[]>([
-    { id: 'jacket', name: 'Vintage Denim Jacket', retailPrice: 78, thriftPrice: 14, waterGallons: 950, selected: true },
-    { id: 'tee', name: 'Cotton Graphic Tee', retailPrice: 32, thriftPrice: 5, waterGallons: 700, selected: true },
-    { id: 'jeans', name: 'Wide-Leg Cargo Pants', retailPrice: 65, thriftPrice: 9, waterGallons: 1100, selected: true },
-    { id: 'shoes', name: 'Retro Sneakers / Boots', retailPrice: 85, thriftPrice: 16, waterGallons: 600, selected: false },
+    { id: 'jacket', name: 'Vintage Denim Jacket', retailMin: 65, retailMax: 95, thriftMin: 10, thriftMax: 18, waterGallons: 950, selected: true },
+    { id: 'tee', name: 'Cotton Graphic Tee', retailMin: 24, retailMax: 38, thriftMin: 4, thriftMax: 8, waterGallons: 700, selected: true },
+    { id: 'jeans', name: 'Wide-Leg Cargo Pants', retailMin: 55, retailMax: 78, thriftMin: 7, thriftMax: 13, waterGallons: 1100, selected: true },
+    { id: 'shoes', name: 'Retro Sneakers / Boots', retailMin: 75, retailMax: 110, thriftMin: 12, thriftMax: 22, waterGallons: 600, selected: false },
   ]);
 
   const togglePiece = (id: string) => {
@@ -120,9 +122,13 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
   };
 
   const selectedPieces = outfitPieces.filter(p => p.selected);
-  const totalRetail = selectedPieces.reduce((acc, p) => acc + p.retailPrice, 0);
-  const totalThrift = selectedPieces.reduce((acc, p) => acc + p.thriftPrice, 0);
-  const totalSaved = totalRetail - totalThrift;
+  const totalRetailMin = selectedPieces.reduce((acc, p) => acc + p.retailMin, 0);
+  const totalRetailMax = selectedPieces.reduce((acc, p) => acc + p.retailMax, 0);
+  const totalThriftMin = selectedPieces.reduce((acc, p) => acc + p.thriftMin, 0);
+  const totalThriftMax = selectedPieces.reduce((acc, p) => acc + p.thriftMax, 0);
+  const totalSavedMin = Math.max(0, totalRetailMin - totalThriftMax);
+  const totalSavedMax = Math.max(0, totalRetailMax - totalThriftMin);
+  const avgSaved = Math.round(((totalRetailMin + totalRetailMax) / 2) - ((totalThriftMin + totalThriftMax) / 2));
   const totalWaterSaved = selectedPieces.reduce((acc, p) => acc + p.waterGallons, 0);
 
   // Filter stores based on the active vibe
@@ -330,10 +336,13 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
             {/* Savings Callout Pill */}
             <div className="bg-white px-4 py-2.5 rounded-2xl border border-[#2E1F16]/15 text-right shrink-0 shadow-xs">
               <span className="text-[10px] uppercase font-bold text-[#2E1F16]/60 block">
-                Total Kept in Pocket:
+                Estimated Savings:
               </span>
               <span className="font-editorial text-2xl font-bold text-[#2E1F16]">
-                ${totalSaved} Saved
+                ${totalSavedMin} – ${totalSavedMax} Saved
+              </span>
+              <span className="text-[11px] font-semibold text-[#2E1F16]/70 block">
+                (Avg ~${avgSaved} kept in pocket)
               </span>
             </div>
           </div>
@@ -361,12 +370,12 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#2E1F16]/60 line-through">
-                    Mall: ${piece.retailPrice}
+                <div className="flex items-center justify-between text-xs gap-1">
+                  <span className="text-[#2E1F16]/60 line-through text-[11px]">
+                    Mall: ${piece.retailMin}–${piece.retailMax}
                   </span>
-                  <span className="font-bold text-[#2E1F16] bg-[#C1D7C2]/60 px-1.5 py-0.5 rounded">
-                    Thrift: ${piece.thriftPrice}
+                  <span className="font-bold text-[#2E1F16] bg-[#C1D7C2]/70 px-2 py-0.5 rounded text-[11px]">
+                    Thrift: ${piece.thriftMin}–${piece.thriftMax}
                   </span>
                 </div>
               </button>
@@ -380,11 +389,11 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                 <DollarSign className="w-5 h-5 text-[#2E1F16]" />
               </div>
               <div>
-                <div className="text-[10px] uppercase font-bold text-[#2E1F16]/60">Your Haul Total</div>
-                <div className="text-lg font-bold text-[#2E1F16]">
-                  ${totalThrift}{' '}
+                <div className="text-[10px] uppercase font-bold text-[#2E1F16]/60">Your Haul Range</div>
+                <div className="text-base sm:text-lg font-bold text-[#2E1F16]">
+                  ${totalThriftMin} – ${totalThriftMax}{' '}
                   <span className="text-xs font-normal text-[#2E1F16]/60">
-                    (vs ${totalRetail} at retail mall)
+                    (vs ${totalRetailMin} – ${totalRetailMax} mall)
                   </span>
                 </div>
               </div>

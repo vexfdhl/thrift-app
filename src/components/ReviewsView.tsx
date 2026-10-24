@@ -138,7 +138,7 @@ export const ReviewsView: React.FC<ReviewsViewProps> = ({
 
     onAddAppFeedback(newFeedback);
     setIsFeedbackSubmitted(true);
-    onToast('Thank you! Your feedback for ThriftIt DuvALL was recorded.');
+    onToast('Thank you! Your feedback for ThriftFit DuvALL was recorded.');
     setFeedbackAuthor('');
     setFeedbackComment('');
     setFeedbackSuggestion('');
@@ -439,7 +439,7 @@ export const ReviewsView: React.FC<ReviewsViewProps> = ({
           >
             <div>
               <h2 className="font-editorial text-2xl text-[#2E1F16]">
-                Rate <span className="font-editorial-italic text-[#EFAE6E]">ThriftIt DuvALL</span> &amp; Suggest Ideas
+                Rate <span className="font-editorial-italic text-[#EFAE6E]">ThriftFit DuvALL</span> &amp; Suggest Ideas
               </h2>
               <p className="text-[#2E1F16]/70 text-xs sm:text-sm mt-1">
                 Help Duval student developers keep our community database up to date.
@@ -526,7 +526,7 @@ export const ReviewsView: React.FC<ReviewsViewProps> = ({
 
             <div>
               <label className="font-bold text-[#2E1F16] block mb-1">
-                What do you love about ThriftIt? *
+                What do you love about ThriftFit? *
               </label>
               <textarea
                 rows={2}

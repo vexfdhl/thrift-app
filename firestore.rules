@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Admin role verification with bootstrapped operator
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'vexijbg@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidStore(data) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.address is string && data.address.size() >= 5 && data.address.size() <= 250 &&
+        data.zip is string && data.zip.size() >= 5 && data.zip.size() <= 15 &&
+        data.city is string && data.city.size() >= 2 && data.city.size() <= 60 &&
+        data.priceTier in ['$', '$$', '$$$', '$$$$'] &&
+        data.published is bool &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 30)) &&
+        (!('lat' in data) || data.lat is number) &&
+        (!('lng' in data) || data.lng is number) &&
+        (!('priceRangeFormatted' in data) || (data.priceRangeFormatted is string && data.priceRangeFormatted.size() <= 60)) &&
+        (!('priceNotes' in data) || (data.priceNotes is string && data.priceNotes.size() <= 600)) &&
+        (!('openNowText' in data) || (data.openNowText is string && data.openNowText.size() <= 100)) &&
+        (!('isOpenNow' in data) || data.isOpenNow is bool) &&
+        (!('fittingRoomsCount' in data) || (data.fittingRoomsCount is number && data.fittingRoomsCount >= 0)) &&
+        (!('fittingRoomsNote' in data) || (data.fittingRoomsNote is string && data.fittingRoomsNote.size() <= 250)) &&
+        (!('hasBathroom' in data) || data.hasBathroom is bool) &&
+        (!('hasFormalwear' in data) || data.hasFormalwear is bool) &&
+        (!('formalwearNotes' in data) || (data.formalwearNotes is string && data.formalwearNotes.size() <= 600)) &&
+        (!('bonusInfo' in data) || (data.bonusInfo is string && data.bonusInfo.size() <= 600)) &&
+        (!('overallSummary' in data) || (data.overallSummary is string && data.overallSummary.size() <= 600)) &&
+        (!('categories' in data) || (data.categories is list && data.categories.size() <= 30)) &&
+        (!('sustainableMaterials' in data) || (data.sustainableMaterials is list && data.sustainableMaterials.size() <= 20)) &&
+        (!('nearestSchoolIds' in data) || (data.nearestSchoolIds is list && data.nearestSchoolIds.size() <= 30));
+    }
+
+    function isValidReview(data) {
+      return data.id is string && data.id.size() <= 128 &&
+        data.storeId is string && data.storeId.size() <= 128 &&
+        data.author is string && data.author.size() >= 2 && data.author.size() <= 100 &&
+        data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+        data.comment is string && data.comment.size() >= 3 && data.comment.size() <= 2000 &&
+        data.status in ['approved', 'pending', 'hidden'] &&
+        (!('school' in data) || (data.school is string && data.school.size() <= 120)) &&
+        (!('date' in data) || (data.date is string && data.date.size() <= 50)) &&
+        (!('helpfulCount' in data) || data.helpfulCount is number) &&
+        (!('tags' in data) || (data.tags is list && data.tags.size() <= 15));
+    }
+
+    // Admin collection
+    match /admins/{adminId} {
+      allow get, list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Thrift store directory
+    match /stores/{storeId} {
+      allow get: if isValidId(storeId) && (resource.data.published == true || isAdmin());
+      allow list: if true;
+      allow create: if isValidId(storeId) && isAdmin() && isValidStore(incoming());
+      allow update: if isValidId(storeId) && isAdmin() && isValidStore(incoming());
+      allow delete: if isValidId(storeId) && isAdmin();
+    }
+
+    // Reviews & moderation
+    match /reviews/{reviewId} {
+      allow get: if isValidId(reviewId) && (resource.data.status == 'approved' || isAdmin());
+      allow list: if true;
+      allow create: if isValidId(reviewId) && isValidReview(incoming()) && (isAdmin() || incoming().status in ['approved', 'pending']);
+      allow update: if isValidId(reviewId) && (
+        isAdmin() ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['helpfulCount']) && incoming().helpfulCount == existing().helpfulCount + 1)
+      );
+      allow delete: if isValidId(reviewId) && isAdmin();
+    }
+  }
+}

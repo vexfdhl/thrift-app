@@ -117,7 +117,7 @@ export const AboutView: React.FC<AboutViewProps> = ({ onStartSearch, onExploreDi
                   Our Community Solution
                 </div>
                 <h3 className="font-editorial text-2xl text-[#2E1F16]">
-                  ThriftIt DuvALL
+                  ThriftFit DuvALL
                 </h3>
                 <ul className="space-y-3.5 text-xs sm:text-sm text-[#2E1F16]/80 leading-relaxed">
                   <li className="flex items-start gap-2.5">

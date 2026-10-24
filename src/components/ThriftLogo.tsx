@@ -9,7 +9,7 @@ interface ThriftLogoProps {
 }
 
 export const ThriftLogo: React.FC<ThriftLogoProps> = ({
-  title = 'ThriftIt',
+  title = 'ThriftFit',
   subtitle = 'Duval County Student Fashion Network',
   variant = 'compact',
   className = '',
@@ -56,7 +56,7 @@ export const ThriftLogo: React.FC<ThriftLogoProps> = ({
     return (
       <div className={`inline-flex items-center gap-2 select-none ${className}`}>
         <div className="w-7 h-7 rounded-xl bg-[#C1D7C2] text-[#2E1F16] flex items-center justify-center text-[10px] font-bold border border-[#2E1F16]/10">
-          TD
+          TF
         </div>
         <span className={`font-editorial text-lg tracking-normal ${textColor}`}>
           {title} <span className={duvalColor}>DuvALL</span>

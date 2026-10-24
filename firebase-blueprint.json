@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "Store": {
+      "title": "Store",
+      "description": "Thrift store directory listing in Duval County with student and inventory metadata",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "address": { "type": "string", "minLength": 5, "maxLength": 250 },
+        "zip": { "type": "string", "minLength": 5, "maxLength": 15 },
+        "city": { "type": "string", "minLength": 2, "maxLength": 60 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "priceTier": { "type": "string", "enum": ["$", "$$", "$$$", "$$$$"] },
+        "priceRangeFormatted": { "type": "string", "maxLength": 60 },
+        "priceNotes": { "type": "string", "maxLength": 600 },
+        "hours": { "type": "object" },
+        "openNowText": { "type": "string", "maxLength": 100 },
+        "isOpenNow": { "type": "boolean" },
+        "categories": { "type": "array" },
+        "sustainableMaterials": { "type": "array" },
+        "fittingRoomsCount": { "type": "number" },
+        "fittingRoomsNote": { "type": "string", "maxLength": 250 },
+        "hasBathroom": { "type": "boolean" },
+        "hasFormalwear": { "type": "boolean" },
+        "formalwearNotes": { "type": "string", "maxLength": 600 },
+        "inventorySplit": { "type": "object" },
+        "bonusInfo": { "type": "string", "maxLength": 600 },
+        "overallSummary": { "type": "string", "maxLength": 600 },
+        "nearestSchoolIds": { "type": "array" },
+        "published": { "type": "boolean" },
+        "updatedAt": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "address", "zip", "city", "priceTier", "published"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Community user and student reviews with admin moderation status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "storeId": { "type": "string", "maxLength": 128 },
+        "author": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "school": { "type": "string", "maxLength": 120 },
+        "rating": { "type": "number" },
+        "date": { "type": "string", "maxLength": 50 },
+        "comment": { "type": "string", "minLength": 3, "maxLength": 2000 },
+        "tags": { "type": "array" },
+        "helpfulCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["approved", "pending", "hidden"] },
+        "userId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "storeId", "author", "rating", "comment", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized district administrator record",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["admin", "superadmin"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/stores/{storeId}": {
+      "schema": "Store",
+      "description": "Thrift store directory listing for Duval County"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Community and student reviews with moderation status"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Admin access authorization records"
+    }
+  }
+}
