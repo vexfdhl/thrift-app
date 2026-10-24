@@ -105,14 +105,14 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
   compareStoreIds,
 }) => {
   const [activeVibe, setActiveVibe] = useState<VibeId>('y2k');
-  const [comparisonMode, setComparisonMode] = useState<'thrift' | 'retail'>('thrift');
 
-  // Interactive outfit piece toggles with realistic price ranges
   const [outfitPieces, setOutfitPieces] = useState<OutfitPiece[]>([
-    { id: 'jacket', name: 'Vintage Denim Jacket', retailMin: 65, retailMax: 95, thriftMin: 10, thriftMax: 18, waterGallons: 950, selected: true },
-    { id: 'tee', name: 'Cotton Graphic Tee', retailMin: 24, retailMax: 38, thriftMin: 4, thriftMax: 8, waterGallons: 700, selected: true },
-    { id: 'jeans', name: 'Wide-Leg Cargo Pants', retailMin: 55, retailMax: 78, thriftMin: 7, thriftMax: 13, waterGallons: 1100, selected: true },
-    { id: 'shoes', name: 'Retro Sneakers / Boots', retailMin: 75, retailMax: 110, thriftMin: 12, thriftMax: 22, waterGallons: 600, selected: false },
+    { id: 'jacket', name: 'Vintage Outerwear / Denim Jacket', retailMin: 85, retailMax: 160, thriftMin: 8, thriftMax: 18, waterGallons: 1800, selected: true },
+    { id: 'tee', name: 'Heavyweight Graphic Tee', retailMin: 32, retailMax: 55, thriftMin: 3, thriftMax: 8, waterGallons: 700, selected: true },
+    { id: 'pants', name: 'Wide-Leg Skate Jeans / Cargos', retailMin: 68, retailMax: 110, thriftMin: 6, thriftMax: 14, waterGallons: 2000, selected: true },
+    { id: 'formal', name: 'Homecoming Blazer / Party Dress', retailMin: 120, retailMax: 220, thriftMin: 15, thriftMax: 30, waterGallons: 2600, selected: false },
+    { id: 'hoodie', name: 'Oversized Athletic Hoodie', retailMin: 65, retailMax: 95, thriftMin: 6, thriftMax: 12, waterGallons: 1500, selected: false },
+    { id: 'shoes', name: 'Retro Sneakers / Work Boots', retailMin: 90, retailMax: 140, thriftMin: 12, thriftMax: 28, waterGallons: 1200, selected: false },
   ]);
 
   const togglePiece = (id: string) => {
@@ -126,48 +126,50 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
   const totalRetailMax = selectedPieces.reduce((acc, p) => acc + p.retailMax, 0);
   const totalThriftMin = selectedPieces.reduce((acc, p) => acc + p.thriftMin, 0);
   const totalThriftMax = selectedPieces.reduce((acc, p) => acc + p.thriftMax, 0);
-  const totalSavedMin = Math.max(0, totalRetailMin - totalThriftMax);
-  const totalSavedMax = Math.max(0, totalRetailMax - totalThriftMin);
-  const avgSaved = Math.round(((totalRetailMin + totalRetailMax) / 2) - ((totalThriftMin + totalThriftMax) / 2));
   const totalWaterSaved = selectedPieces.reduce((acc, p) => acc + p.waterGallons, 0);
 
-  // Filter stores based on the active vibe
+  const totalSavedMin = totalRetailMin - totalThriftMax;
+  const totalSavedMax = totalRetailMax - totalThriftMin;
+  const avgSaved = Math.round((totalSavedMin + totalSavedMax) / 2);
+
   const matchedStores = useMemo(() => {
     let list = [...stores];
 
-    if (activeVibe === 'y2k') {
-      list = list.filter(
-        s =>
-          s.categories.some(c => c.toLowerCase().includes('vintage') || c.toLowerCase().includes('streetwear')) ||
-          s.sustainableMaterials.includes('Heavy Denim') ||
-          s.name.includes('City Thrift') ||
-          s.name.includes('Hope Deals')
-      );
-    } else if (activeVibe === 'denim') {
-      list = list.filter(
-        s =>
-          s.sustainableMaterials.includes('Heavy Denim') ||
-          s.sustainableMaterials.includes('100% Cotton')
-      );
-    } else if (activeVibe === 'formal') {
-      list = list.filter(s => s.hasFormalwear);
-    } else if (activeVibe === 'budget') {
-      list = list.filter(s => s.priceTier === '$');
-    } else if (activeVibe === 'fitting') {
-      list = list.filter(s => s.fittingRoomsCount > 0);
-      list.sort((a, b) => b.fittingRoomsCount - a.fittingRoomsCount);
-    } else if (activeVibe === 'charity') {
-      list = list.filter(
-        s =>
-          s.name.toLowerCase().includes('vincent') ||
-          s.name.toLowerCase().includes('hope') ||
-          s.name.toLowerCase().includes('hubbard') ||
-          s.name.toLowerCase().includes('city rescue') ||
-          s.name.toLowerCase().includes('salvation')
-      );
+    switch (activeVibe) {
+      case 'y2k':
+        list = list.filter(s =>
+          s.categories?.some(c => c.toLowerCase().includes('y2k') || c.toLowerCase().includes('streetwear') || c.toLowerCase().includes('graphic'))
+        );
+        break;
+      case 'denim':
+        list = list.filter(s =>
+          s.categories?.some(c => c.toLowerCase().includes('denim')) ||
+          s.sustainableMaterials?.some(m => m.toLowerCase().includes('denim') || m.toLowerCase().includes('cotton'))
+        );
+        break;
+      case 'formal':
+        list = list.filter(s => s.hasFormalwear);
+        break;
+      case 'budget':
+        list = list.filter(s => s.priceTier === '$');
+        break;
+      case 'fitting':
+        list = list.filter(s => s.fittingRoomsCount > 0);
+        break;
+      case 'charity':
+        list = list.filter(s =>
+          s.overallSummary?.toLowerCase().includes('charity') ||
+          s.overallSummary?.toLowerCase().includes('ministry') ||
+          s.overallSummary?.toLowerCase().includes('rescue') ||
+          s.overallSummary?.toLowerCase().includes('shelter') ||
+          s.overallSummary?.toLowerCase().includes('non-profit') ||
+          s.overallSummary?.toLowerCase().includes('hospice')
+        );
+        break;
     }
 
-    // Sort by proximity if school is selected
+    if (list.length === 0) list = stores;
+
     if (selectedSchool) {
       list.sort((a, b) => {
         const distA = calculateDistanceMiles(selectedSchool.lat, selectedSchool.lng, a.lat, a.lng);
@@ -179,22 +181,21 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
     return list.slice(0, 3);
   }, [stores, activeVibe, selectedSchool]);
 
-  const currentVibeObj = VIBES.find(v => v.id === activeVibe)!;
+  const currentVibeObj = VIBES.find(v => v.id === activeVibe) || VIBES[0];
 
   return (
-    <section className="w-full bg-[#FBEFD9] py-16 sm:py-24 px-4 sm:px-8 border-b border-[#2E1F16]/10 font-['Nunito',sans-serif]">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Section Header */}
+    <section className="w-full bg-[#FBEFD9] py-10 sm:py-16 px-4 sm:px-8 border-b border-[#2E1F16]/10 font-['Nunito',sans-serif]">
+      <div className="max-w-6xl mx-auto space-y-10">
+        {/* Header */}
         <div className="text-center space-y-2 max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.2em] uppercase text-[#2E1F16] bg-[#C1D7C2]/60 px-2.5 py-0.5 rounded-full">
-            <Sparkles className="w-3.5 h-3.5 text-[#2E1F16]" />
-            <span>Interactive Fit Finder</span>
-          </div>
-          <h2 className="font-editorial text-3xl sm:text-5xl text-[#2E1F16] font-normal leading-tight">
-            Curate Your <span className="font-editorial-italic font-normal text-[#EFAE6E]">Secondhand Vibe</span>
+          <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#2E1F16]/70 block">
+            AESTHETIC &amp; BUDGET VIBE FINDER
+          </span>
+          <h2 className="font-editorial text-3xl sm:text-5xl text-[#2E1F16] font-normal">
+            Match Your Style to <span className="font-editorial-italic text-[#EFAE6E]">Jacksonville Racks</span>
           </h2>
-          <p className="text-xs sm:text-sm text-[#2E1F16]/75 leading-relaxed">
-            Select what you're hunting for today. We'll instantly match the top 3 Duval racks nearest {selectedSchool?.name || 'your high school'} and compute your outfit budget savings.
+          <p className="text-xs sm:text-sm text-[#2E1F16]/75">
+            Select what you are shopping for today to instantly highlight the best 3 Duval thrift stores matching your campus.
           </p>
         </div>
 
@@ -219,7 +220,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
           })}
         </div>
 
-        {/* Matched Stores Grid (Minimalist & Unboxed) */}
+        {/* Matched Stores Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {matchedStores.map((store, idx) => {
             const distance = selectedSchool
@@ -234,7 +235,6 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                 className="bg-white rounded-3xl p-6 border border-[#2E1F16]/12 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-5"
               >
                 <div className="space-y-3">
-                  {/* Unboxed Metadata Header */}
                   <div className="flex items-center justify-between text-[11px] text-[#2E1F16]/75 font-semibold">
                     <span className="text-[#2E1F16] font-bold bg-[#C1D7C2]/60 px-2 py-0.5 rounded-full">
                       {currentVibeObj.badge} · #{idx + 1}
@@ -263,17 +263,15 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                     </div>
                   </div>
 
-                  {/* Title & Location */}
                   <div>
                     <h3 className="font-editorial text-2xl text-[#2E1F16] font-normal leading-snug">
                       {store.name}
                     </h3>
-                    <p className="text-xs text-[#2E1F16]/65 mt-1">
+                    <p className="text-xs text-[#2E1F16]/65 mt-1 truncate">
                       {store.address}
                     </p>
                   </div>
 
-                  {/* Quiet Unboxed Stats Strip */}
                   <div className="text-xs text-[#2E1F16]/85 font-medium flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 border-t border-[#2E1F16]/10">
                     <span>{store.priceTier} · {store.priceRangeFormatted}</span>
                     <span>·</span>
@@ -286,7 +284,6 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                     )}
                   </div>
 
-                  {/* Context Note */}
                   <p className="text-xs text-[#2E1F16]/75 leading-relaxed line-clamp-2">
                     {activeVibe === 'formal' && store.formalwearNotes}
                     {activeVibe === 'budget' && store.priceNotes}
@@ -295,7 +292,6 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                   </p>
                 </div>
 
-                {/* Bottom Actions */}
                 <div className="pt-2 flex items-center gap-2">
                   <button
                     onClick={() => onQuickPeek(store)}
@@ -318,7 +314,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
           })}
         </div>
 
-        {/* Interactive Outfit Price Battle Card */}
+        {/* Live Outfit Cost Simulator Card */}
         <div className="bg-[#F7E09A]/20 rounded-3xl p-6 sm:p-10 border border-[#2E1F16]/10 shadow-xs space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -333,7 +329,6 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
               </p>
             </div>
 
-            {/* Savings Callout Pill */}
             <div className="bg-white px-4 py-2.5 rounded-2xl border border-[#2E1F16]/15 text-right shrink-0 shadow-xs">
               <span className="text-[10px] uppercase font-bold text-[#2E1F16]/60 block">
                 Estimated Savings:
@@ -347,8 +342,8 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
             </div>
           </div>
 
-          {/* Interactive Garment Checkbox Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Interactive Garment Chips */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {outfitPieces.map(piece => (
               <button
                 key={piece.id}
@@ -421,7 +416,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
               <div>
                 <div className="text-[10px] uppercase font-bold text-[#2E1F16]/60">Landfill Impact</div>
                 <div className="text-lg font-bold text-[#2E1F16]">
-                  {selectedPieces.length * 1.8} lbs diverted{' '}
+                  {(selectedPieces.length * 1.8).toFixed(1)} lbs diverted{' '}
                   <span className="text-xs font-normal text-[#2E1F16]/60">
                     from Duval disposal
                   </span>

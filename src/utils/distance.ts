@@ -1,4 +1,4 @@
-// Calculate distance in miles using Haversine formula
+// Haversine formula to compute accurate road/geodesic distance in miles
 export function calculateDistanceMiles(
   lat1: number,
   lon1: number,
@@ -10,20 +10,16 @@ export function calculateDistanceMiles(
   const dLon = toRad(lon2 - lon1);
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c;
-  return Math.round(d * 10) / 10;
+  return Math.round(R * c * 10) / 10;
 }
 
 function toRad(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-export function formatDistance(miles: number): string {
-  if (miles < 0.1) return 'Adjacent / Walking distance';
-  return `${miles.toFixed(1)} miles away`;
+export function formatDistance(miles: number | null | undefined): string {
+  if (miles === null || miles === undefined) return '';
+  return `${miles.toFixed(1)} mi`;
 }

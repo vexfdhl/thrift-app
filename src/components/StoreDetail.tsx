@@ -8,7 +8,6 @@ import {
   MapPin,
   Phone,
   Clock,
-  Check,
   Star,
   Layers,
   Leaf,
@@ -54,13 +53,12 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
   const [comment, setComment] = useState('');
   const [honeypot, setHoneypot] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [helpfulLiked, setHelpfulLiked] = useState<{ [id: string]: boolean }>({});
 
   const distance = selectedSchool
     ? calculateDistanceMiles(selectedSchool.lat, selectedSchool.lng, store.lat, store.lng)
     : null;
 
-  const averageRating = store.reviews.length > 0
+  const averageRating = store.reviews?.length > 0
     ? (store.reviews.reduce((acc, r) => acc + r.rating, 0) / store.reviews.length).toFixed(1)
     : '5.0';
 
@@ -76,7 +74,7 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
     });
 
     if (!validation.isValid) {
-      setFormError(validation.error || 'Please correct the highlighted issues.');
+      setFormError(validation.error || 'Please correct errors.');
       onToast(validation.error || 'Invalid submission');
       return;
     }
@@ -99,21 +97,11 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
     setComment('');
   };
 
-  const toggleHelpful = (id: string) => {
-    setHelpfulLiked(prev => {
-      const next = !prev[id];
-      if (next) {
-        onToast('Marked review as helpful.');
-      }
-      return { ...prev, [id]: next };
-    });
-  };
-
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: store.name,
-        text: `Check out ${store.name} in Duval County on ThriftFit DuvALL!`,
+        title: `${store.name} - ThriftFit DuvALL`,
+        text: `Check out ${store.name} on ThriftFit DuvALL! Prices: ${store.priceRangeFormatted}`,
         url: window.location.href,
       }).catch(() => {});
     } else {
@@ -159,7 +147,7 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
 
           <button
             onClick={onViewOnMap}
-            className="btn-clevr-outline text-xs px-3.5 py-2 gap-1.5"
+            className="btn-clevr-outline text-xs px-3.5 py-2 gap-1.5 cursor-pointer"
           >
             <MapPin className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">View on Map</span>
@@ -222,7 +210,7 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
               <span className="text-xs text-[#2E1F16]/50 font-normal">/ 5.0</span>
             </div>
             <div className="text-xs font-bold text-[#2E1F16]/70 mt-1">
-              {store.reviews.length} Student Reviews
+              {store.reviews?.length ?? 0} Student Reviews
             </div>
           </div>
         </div>
@@ -257,23 +245,15 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
             </div>
 
             <div className="space-y-1.5 text-xs">
-              {Object.entries(store.hours).map(([day, hrs]) => {
-                const isToday =
-                  new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() === day;
-                return (
-                  <div
-                    key={day}
-                    className={`flex items-center justify-between py-1.5 px-3 rounded-lg capitalize font-medium ${
-                      isToday
-                        ? 'bg-[#C1D7C2] text-[#2E1F16] font-bold shadow-xs'
-                        : 'text-[#2E1F16]/70 hover:bg-[#FBEFD9]'
-                    }`}
-                  >
-                    <span>{day}</span>
-                    <span className="font-semibold text-[#2E1F16]">{hrs}</span>
-                  </div>
-                );
-              })}
+              {Object.entries(store.hours).map(([day, hrs]) => (
+                <div
+                  key={day}
+                  className="flex items-center justify-between py-1.5 px-3 rounded-lg capitalize font-medium text-[#2E1F16]/75 hover:bg-[#FBEFD9]"
+                >
+                  <span>{day}</span>
+                  <span className="font-semibold text-[#2E1F16]">{hrs}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -295,190 +275,111 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
             </h2>
           </div>
 
-          {/* Fitting Rooms Status */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-white border border-[#2E1F16]/10 text-xs shadow-xs">
             <div className="flex items-center gap-3">
-              <DoorOpen className="w-5 h-5 text-[#2E1F16]/70" />
+              <DoorOpen className="w-5 h-5 text-[#EFAE6E]" />
               <div>
-                <div className="font-bold text-[#2E1F16]">
-                  Fitting Rooms: {store.fittingRoomsCount > 0 ? 'Available' : 'Unavailable'}
-                </div>
-                <div className="text-[11px] text-[#2E1F16]/60 mt-0.5">
-                  {store.fittingRoomsNote}
-                </div>
+                <span className="font-bold text-[#2E1F16] block">Fitting Rooms Status:</span>
+                <span className="text-[#2E1F16]/70">{store.fittingRoomsNote}</span>
               </div>
             </div>
-            <span className={`px-3 py-1 rounded text-xs font-bold ${
-              store.fittingRoomsCount > 0
-                ? 'bg-[#C1D7C2] text-[#2E1F16]'
-                : 'bg-[#2E1F16]/15 text-[#2E1F16]'
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+              store.fittingRoomsCount > 0 ? 'bg-[#C1D7C2] text-[#2E1F16]' : 'bg-[#2E1F16]/10 text-[#2E1F16]/60'
             }`}>
-              {store.fittingRoomsCount > 0 ? `${store.fittingRoomsCount} Rooms` : 'None'}
+              {store.fittingRoomsCount > 0 ? `${store.fittingRoomsCount} Open` : 'Closed'}
             </span>
           </div>
 
-          {/* Formalwear Availability */}
-          <div className="p-3.5 rounded-xl border border-[#2E1F16]/10 bg-white text-xs space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-[#2E1F16]">Formal &amp; Semi-Formal:</span>
-              <span className="text-[11px] font-bold text-[#2E1F16] bg-[#F7E09A] px-2.5 py-0.5 rounded-full">
-                {store.hasFormalwear ? 'Available' : 'Casual Focused'}
-              </span>
+          {store.hasFormalwear && (
+            <div className="p-4 rounded-xl bg-[#F7E09A]/40 border border-[#2E1F16]/10 text-xs space-y-1">
+              <span className="font-bold text-[#2E1F16] block">Homecoming &amp; Prom Formalwear:</span>
+              <p className="text-[#2E1F16]/80 font-medium">{store.formalwearNotes}</p>
             </div>
-            <p className="text-[11px] text-[#2E1F16]/70 leading-relaxed">
-              {store.formalwearNotes}
-            </p>
-          </div>
+          )}
 
-          {/* Inventory Split Progress */}
-          <div>
-            <div className="flex items-center justify-between text-xs font-bold text-[#2E1F16] mb-1.5">
-              <span>Inventory Split</span>
-              <span className="text-[#2E1F16]/60 font-medium">
-                Women's {store.inventorySplit.womensPercent}% / Men's {store.inventorySplit.mensPercent}%
-              </span>
-            </div>
-            <div className="w-full h-2.5 rounded-full overflow-hidden flex bg-[#2E1F16]/15">
-              <div
-                style={{ width: `${store.inventorySplit.womensPercent}%` }}
-                className="bg-[#EFAE6E] h-full"
-                title={`Women's: ${store.inventorySplit.womensPercent}%`}
-              />
-              <div
-                style={{ width: `${store.inventorySplit.mensPercent}%` }}
-                className="bg-[#C1D7C2] h-full"
-                title={`Men's: ${store.inventorySplit.mensPercent}%`}
-              />
-            </div>
-          </div>
-
-          {/* Sustainable Natural Materials */}
-          <div>
-            <span className="text-xs font-bold text-[#2E1F16] block mb-1.5 flex items-center gap-1.5">
-              <Leaf className="w-4 h-4 text-[#2E1F16]" />
-              <span>Verified Sustainable Fabrics:</span>
+          <div className="space-y-2">
+            <span className="font-bold text-xs text-[#2E1F16]/70 uppercase tracking-wider block">
+              Categories Available:
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {store.sustainableMaterials.map(mat => (
-                <span
-                  key={mat}
-                  className="bg-[#C1D7C2]/60 text-[#2E1F16] text-xs font-bold px-2.5 py-0.5 rounded-full"
-                >
-                  {mat}
+              {store.categories.map(c => (
+                <span key={c} className="bg-white border border-[#2E1F16]/10 px-3 py-1 rounded-full text-xs font-semibold">
+                  {c}
                 </span>
               ))}
             </div>
           </div>
-
-          {/* Bonus Info */}
-          <div className="p-3 rounded-xl bg-white border border-[#2E1F16]/10 text-xs text-[#2E1F16]">
-            <strong>Student Tip:</strong> {store.bonusInfo}
-          </div>
         </div>
       </div>
 
-      {/* 3. REVIEWS SECTION */}
-      <div className="clevr-card p-6 sm:p-8 bg-[#F7E09A]/20 border border-[#2E1F16]/10 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#2E1F16]/10">
+      {/* 3. STUDENT REVIEWS SECTION */}
+      <div className="clevr-card p-6 sm:p-10 bg-white border border-[#2E1F16]/10 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2E1F16]/10 pb-5">
           <div>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-[#EFAE6E]" />
-              <h2 className="font-editorial text-2xl text-[#2E1F16]">
-                Student Reviews for {store.name}
-              </h2>
-            </div>
-            <p className="text-xs sm:text-sm text-[#2E1F16]/70 mt-0.5">
-              Authentic student feedback on selection, fitting room status, and pricing.
+            <h2 className="font-editorial text-2xl sm:text-3xl text-[#2E1F16]">
+              Student Reviews &amp; Tips ({store.reviews?.length ?? 0})
+            </h2>
+            <p className="text-xs text-[#2E1F16]/70 mt-1">
+              Real advice from high school students across Duval County.
             </p>
           </div>
 
           <button
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className="btn-clevr-brown text-xs px-4 py-2 shrink-0 self-start sm:self-auto cursor-pointer"
+            className="btn-clevr-brown text-xs px-4 py-2 self-start sm:self-auto cursor-pointer"
           >
-            <span>{isFormOpen ? 'Close Form' : 'Write a Review'}</span>
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{isFormOpen ? 'Cancel' : 'Write a Review'}</span>
           </button>
         </div>
 
         {/* Review Form */}
         {isFormOpen && (
-          <form
-            onSubmit={handleSubmitReview}
-            className="p-6 bg-white border border-[#2E1F16]/20 rounded-2xl space-y-4 animate-fade-in"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-editorial text-lg text-[#2E1F16]">
-                Submit Your Review
-              </h3>
-              <span className="text-[11px] font-bold text-[#2E1F16]/50 uppercase tracking-wide">
-                Saved Locally
-              </span>
-            </div>
-
+          <form onSubmit={handleSubmitReview} className="bg-[#FBEFD9] p-5 rounded-2xl border border-[#2E1F16]/15 space-y-4 text-xs font-semibold">
             {formError && (
-              <div className="p-3 bg-[#EFAE6E]/20 border border-[#EFAE6E] rounded-xl text-xs font-bold text-[#2E1F16] flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-[#2E1F16]" />
-                <span>{formError}</span>
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl">
+                {formError}
               </div>
             )}
 
-            <div className="hidden">
-              <input
-                type="text"
-                value={honeypot}
-                onChange={e => setHoneypot(e.target.value)}
-                tabIndex={-1}
-                autoComplete="off"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="font-bold text-[#2E1F16] block mb-1">
-                  Your Name / Handle *
-                </label>
+                <label className="block text-[#2E1F16] mb-1 font-bold">Your Name / Handle *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Maya L."
+                  required
                   value={authorName}
                   onChange={e => setAuthorName(e.target.value)}
-                  className="w-full bg-[#FBEFD9] border border-[#2E1F16]/20 rounded-xl px-3 py-2 text-xs font-semibold text-[#2E1F16] focus:outline-none"
-                  required
+                  placeholder="e.g. Jordan D."
+                  className="w-full p-2.5 bg-white border border-[#2E1F16]/20 rounded-xl"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-[#2E1F16] block mb-1">
-                  Your High School (Optional)
-                </label>
+                <label className="block text-[#2E1F16] mb-1 font-bold">High School</label>
                 <input
                   type="text"
-                  placeholder="e.g. Riverside High School"
                   value={authorSchool}
                   onChange={e => setAuthorSchool(e.target.value)}
-                  className="w-full bg-[#FBEFD9] border border-[#2E1F16]/20 rounded-xl px-3 py-2 text-xs font-semibold text-[#2E1F16] focus:outline-none"
+                  placeholder="e.g. Riverside High School"
+                  className="w-full p-2.5 bg-white border border-[#2E1F16]/20 rounded-xl"
                 />
               </div>
             </div>
 
-            {/* Star Rating Select */}
             <div>
-              <label className="font-bold text-[#2E1F16] text-xs block mb-1">
-                Rating: {rating} of 5 Stars
-              </label>
-              <div className="flex items-center gap-1.5">
-                {[1, 2, 3, 4, 5].map(starVal => (
+              <label className="block text-[#2E1F16] mb-1 font-bold">Rating (Stars)</label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map(st => (
                   <button
-                    key={starVal}
+                    key={st}
                     type="button"
-                    onClick={() => setRating(starVal)}
-                    className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                    onClick={() => setRating(st)}
+                    className="p-1 cursor-pointer"
                   >
                     <Star
                       className={`w-6 h-6 ${
-                        starVal <= rating
-                          ? 'fill-[#EFAE6E] text-[#EFAE6E]'
-                          : 'text-[#2E1F16]/20'
+                        st <= rating ? 'fill-[#EFAE6E] text-[#EFAE6E]' : 'text-gray-300'
                       }`}
                     />
                   </button>
@@ -486,83 +387,72 @@ export const StoreDetail: React.FC<StoreDetailProps> = ({
               </div>
             </div>
 
-            {/* Comment Body */}
             <div>
-              <label className="font-bold text-[#2E1F16] text-xs block mb-1">
-                Review Comments * (Minimum 10 characters)
-              </label>
+              <label className="block text-[#2E1F16] mb-1 font-bold">Your Review &amp; Thrifting Tips *</label>
               <textarea
                 rows={3}
-                placeholder="Share your experience with fitting rooms, inventory variety, pricing, or parking..."
+                required
                 value={comment}
                 onChange={e => setComment(e.target.value)}
-                className="w-full bg-[#FBEFD9] border border-[#2E1F16]/20 rounded-xl p-3 text-xs font-medium text-[#2E1F16] focus:outline-none"
-                required
+                placeholder="What did you score? How are the fitting rooms? Best day to visit?"
+                className="w-full p-2.5 bg-white border border-[#2E1F16]/20 rounded-xl"
               />
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="btn-clevr-outline text-xs px-4 py-2"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="btn-clevr-brown text-xs px-5 py-2 font-bold"
-              >
-                Publish Review
-              </button>
-            </div>
+            {/* Honeypot field for anti-spam */}
+            <input
+              type="text"
+              value={honeypot}
+              onChange={e => setHoneypot(e.target.value)}
+              className="hidden"
+              tabIndex={-1}
+            />
+
+            <button
+              type="submit"
+              className="btn-clevr-brown text-xs py-2.5 px-6 font-bold cursor-pointer"
+            >
+              Submit Review
+            </button>
           </form>
         )}
 
-        {/* Existing Reviews List */}
-        <div className="space-y-3">
-          {store.reviews.map(rev => (
-            <div
-              key={rev.id}
-              className="p-5 rounded-2xl bg-white border border-[#2E1F16]/10 space-y-2 text-xs shadow-xs"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-[#2E1F16] text-sm">{rev.author}</span>
-                  {rev.school && (
-                    <span className="text-[11px] font-semibold text-[#2E1F16]/60">({rev.school})</span>
-                  )}
+        {/* Reviews List */}
+        <div className="space-y-4">
+          {!store.reviews || store.reviews.length === 0 ? (
+            <p className="text-xs text-[#2E1F16]/60 italic py-4">
+              No reviews yet for this location. Be the first Duval student to share a thrift tip!
+            </p>
+          ) : (
+            store.reviews.map(rev => (
+              <div key={rev.id} className="p-4 bg-[#FBEFD9]/50 rounded-2xl border border-[#2E1F16]/10 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="font-bold text-[#2E1F16]">
+                    {rev.author} {rev.school && <span className="text-[#2E1F16]/60">· {rev.school}</span>}
+                  </div>
+                  <div className="flex items-center gap-1 text-[#EFAE6E]">
+                    {[...Array(rev.rating)].map((_, i) => (
+                      <Star key={i} className="w-3.5 h-3.5 fill-[#EFAE6E]" />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex items-center gap-0.5 text-[#EFAE6E]">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-3.5 h-3.5 ${
-                        i < rev.rating ? 'fill-[#EFAE6E] text-[#EFAE6E]' : 'text-[#2E1F16]/20'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
 
-              <p className="text-[#2E1F16]/85 leading-relaxed font-normal">
-                {rev.comment}
-              </p>
+                <p className="text-xs text-[#2E1F16]/80 leading-relaxed font-normal">
+                  {rev.comment}
+                </p>
 
-              <div className="flex items-center justify-between text-[11px] text-[#2E1F16]/50 font-medium pt-2 border-t border-[#2E1F16]/10">
-                <span>{rev.date}</span>
-                <button
-                  onClick={() => toggleHelpful(rev.id)}
-                  className={`flex items-center gap-1 transition-colors cursor-pointer ${
-                    helpfulLiked[rev.id] ? 'text-[#2E1F16] font-bold bg-[#C1D7C2] px-2 py-0.5 rounded-full' : 'hover:text-[#EFAE6E]'
-                  }`}
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  <span>Helpful ({(rev.helpfulCount ?? 0) + (helpfulLiked[rev.id] ? 1 : 0)})</span>
-                </button>
+                {rev.tags && rev.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {rev.tags.map(t => (
+                      <span key={t} className="text-[10px] bg-white border border-[#2E1F16]/10 px-2 py-0.5 rounded-full text-[#2E1F16]/70">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>

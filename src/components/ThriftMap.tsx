@@ -12,7 +12,9 @@ import {
   Navigation,
   RotateCcw,
   DoorOpen,
-  Check
+  Check,
+  Layers,
+  Filter
 } from 'lucide-react';
 
 interface ThriftMapProps {
@@ -25,7 +27,7 @@ interface ThriftMapProps {
 
 const TILE_PROVIDERS = {
   esri: {
-    name: 'Street (Clean)',
+    name: 'Clean Street',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USGS, DeLorme',
     maxZoom: 19,
@@ -51,8 +53,8 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
 
   const [activeTileStyle, setActiveTileStyle] = useState<'esri' | 'osm'>('esri');
-  const [showAllPins, setShowAllPins] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  // Default to true so ALL stores are ALWAYS visible!
+  const [showAllPins, setShowAllPins] = useState(true);
   const [activePreviewStore, setActivePreviewStore] = useState<{
     store: ThriftStoreItem;
     distance: number | null;
@@ -90,11 +92,10 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
     setActiveTileStyle(styleKey);
   }, []);
 
+  // Initialize Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
     if (mapInstanceRef.current) return;
-
-    setIsLoading(true);
 
     const map = L.map(mapContainerRef.current, {
       center: DUVAL_CENTER,
@@ -102,268 +103,207 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
       zoomControl: false,
     });
 
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
-    const provider = TILE_PROVIDERS.esri;
+    const provider = TILE_PROVIDERS[activeTileStyle];
     const tileLayer = L.tileLayer(provider.url, {
       attribution: provider.attribution,
       maxZoom: provider.maxZoom,
     }).addTo(map);
 
     tileLayerRef.current = tileLayer;
-
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
-
+    markersLayerRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
-    setIsLoading(false);
 
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-
-    const resizeObserver = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
-    if (mapContainerRef.current) {
-      resizeObserver.observe(mapContainerRef.current);
-    }
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     return () => {
-      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };
   }, []);
 
+  // Update Pins & Polylines whenever stores or selectedSchool change
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersLayer = markersLayerRef.current;
     if (!map || !markersLayer) return;
 
     markersLayer.clearLayers();
+
     const bounds = L.latLngBounds([]);
 
-    // 1. School Marker
+    // 1. Add School Marker if Selected
     if (selectedSchool) {
-      const schoolLatLng: [number, number] = [selectedSchool.lat, selectedSchool.lng];
-      bounds.extend(schoolLatLng);
-
       const schoolIcon = L.divIcon({
-        className: 'custom-school-marker-wrapper',
+        className: 'custom-school-pin',
         html: `
-          <div style="
-            background-color: #EFAE6E;
-            border: 2px solid #2E1F16;
-            color: #2E1F16;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(46,31,22,0.3);
-            cursor: pointer;
-            position: relative;
-          ">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-            </svg>
-            <div style="
-              position: absolute;
-              bottom: -6px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 0;
-              height: 0;
-              border-left: 6px solid transparent;
-              border-right: 6px solid transparent;
-              border-top: 6px solid #2E1F16;
-            "></div>
+          <div class="relative flex items-center justify-center">
+            <div class="w-10 h-10 rounded-full bg-[#2E1F16] border-3 border-[#F7E09A] shadow-xl flex items-center justify-center text-white transform hover:scale-110 transition-transform">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m4 6 8-4 8 4"/>
+                <path d="m18 10 4 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-8l4-2"/>
+                <path d="M14 22v-4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4"/>
+                <path d="M18 5v17"/>
+                <path d="M6 5v17"/>
+                <circle cx="12" cy="9" r="2"/>
+              </svg>
+            </div>
+            <div class="absolute -bottom-1 w-2 h-2 bg-[#2E1F16] rotate-45"></div>
           </div>
         `,
-        iconSize: [38, 44],
-        iconAnchor: [19, 44],
+        iconSize: [40, 44],
+        iconAnchor: [20, 44],
       });
 
-      const schoolMarker = L.marker(schoolLatLng, { icon: schoolIcon }).addTo(markersLayer);
-      schoolMarker.bindTooltip(
-        `<div style="font-family:'Nunito',sans-serif;font-weight:700;color:#2E1F16;padding:4px 6px;">
-          <strong>${selectedSchool.name}</strong><br/>
-          <span style="font-size:11px;color:#EFAE6E;font-weight:700;">Active Duval High School</span>
-        </div>`,
-        { direction: 'top', offset: [0, -42] }
-      );
+      const schoolMarker = L.marker([selectedSchool.lat, selectedSchool.lng], {
+        icon: schoolIcon,
+        zIndexOffset: 1000,
+      }).addTo(markersLayer);
+
+      schoolMarker.bindPopup(`
+        <div style="font-family: 'Nunito', sans-serif; padding: 4px;">
+          <strong style="color: #2E1F16; font-size: 13px;">${selectedSchool.name}</strong><br/>
+          <span style="font-size: 11px; color: #666;">${selectedSchool.address}</span>
+        </div>
+      `);
+
+      bounds.extend([selectedSchool.lat, selectedSchool.lng]);
     }
 
-    // 2. Store Markers
-    displayStores.forEach(({ store, dist }, index) => {
-      const storeLatLng: [number, number] = [store.lat, store.lng];
-      bounds.extend(storeLatLng);
+    // 2. Add Store Markers
+    displayStores.forEach(({ store, dist }, idx) => {
+      bounds.extend([store.lat, store.lng]);
 
-      const isTopClosest = selectedSchool && index < 3;
-      const markerBg = isTopClosest ? '#C1D7C2' : '#F7E09A';
-      const textColor = '#2E1F16';
-      const borderColor = '#2E1F16';
-      const labelText = isTopClosest ? `#${index + 1}` : store.priceTier;
+      const isClosest3 = selectedSchool && idx < 3;
+      const pinColor = isClosest3 ? '#EFAE6E' : '#2E1F16';
+      const badgeText = isClosest3 ? `#${idx + 1}` : store.priceTier;
 
       const storeIcon = L.divIcon({
-        className: 'custom-store-marker-wrapper',
+        className: 'custom-thrift-pin',
         html: `
-          <div style="
-            background-color: ${markerBg};
-            border: 2px solid ${borderColor};
-            color: ${textColor};
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(46,31,22,0.2);
-            cursor: pointer;
-            position: relative;
-            font-family: 'Nunito', sans-serif;
-            font-weight: 800;
-            font-size: 11px;
-          ">
-            <span>${labelText}</span>
-            <div style="
-              position: absolute;
-              bottom: -5px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 0;
-              height: 0;
-              border-left: 5px solid transparent;
-              border-right: 5px solid transparent;
-              border-top: 5px solid ${borderColor};
-            "></div>
+          <div class="relative flex items-center justify-center cursor-pointer group">
+            <div class="px-2 py-1 rounded-full text-xs font-bold shadow-lg border-2 border-white flex items-center gap-1 transition-transform group-hover:scale-110" style="background-color: ${pinColor}; color: ${isClosest3 ? '#2E1F16' : '#FBEFD9'};">
+              <span class="text-[10px] uppercase font-black">${badgeText}</span>
+              <span class="truncate max-w-[85px] text-[11px] font-bold">${store.name.split(' ')[0]}</span>
+            </div>
           </div>
         `,
-        iconSize: [36, 41],
-        iconAnchor: [18, 41],
+        iconSize: [110, 32],
+        iconAnchor: [55, 16],
       });
 
-      const storeMarker = L.marker(storeLatLng, { icon: storeIcon }).addTo(markersLayer);
+      const marker = L.marker([store.lat, store.lng], {
+        icon: storeIcon,
+      }).addTo(markersLayer);
 
-      storeMarker.on('click', () => {
+      marker.on('click', () => {
         setActivePreviewStore({ store, distance: dist });
       });
 
-      storeMarker.bindTooltip(
-        `<div style="font-family:'Nunito',sans-serif;font-weight:700;color:#2E1F16;padding:4px 6px;">
-          <strong>${store.name}</strong> (${store.priceTier})<br/>
-          <span style="font-size:11px;color:#2E1F16;font-weight:600;">${
-            dist !== null ? formatDistance(dist) + ' from campus' : store.city
-          }</span>
-        </div>`,
-        { direction: 'top', offset: [0, -38] }
-      );
+      // Draw dotted connection line between selected school and top 3 closest stores
+      if (selectedSchool && isClosest3) {
+        L.polyline(
+          [
+            [selectedSchool.lat, selectedSchool.lng],
+            [store.lat, store.lng],
+          ],
+          {
+            color: '#EFAE6E',
+            weight: 3,
+            dashArray: '6, 8',
+            opacity: 0.8,
+          }
+        ).addTo(markersLayer);
+      }
     });
 
+    // Fit map bounds
     if (bounds.isValid()) {
-      map.fitBounds(bounds, {
-        padding: [60, 60],
-        maxZoom: 14,
-        animate: true,
-      });
-    } else {
-      map.setView(DUVAL_CENTER, DEFAULT_ZOOM, { animate: true });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
     }
-
-    if (selectedSchool && displayStores.length > 0) {
-      setActivePreviewStore({
-        store: displayStores[0].store,
-        distance: displayStores[0].dist,
-      });
-    } else {
-      setActivePreviewStore(null);
-    }
-
-    setTimeout(() => map.invalidateSize(), 100);
-  }, [selectedSchool, showAllPins]);
+  }, [displayStores, selectedSchool]);
 
   const handleResetDuvalCenter = () => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-    map.setView(DUVAL_CENTER, DEFAULT_ZOOM, { animate: true });
-    if (onClearSchool) onClearSchool();
-    setActivePreviewStore(null);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView(DUVAL_CENTER, DEFAULT_ZOOM);
+    }
   };
 
   return (
-    <div className={`relative w-full ${heightClassName} rounded-2xl overflow-hidden border border-[#2E1F16]/15 bg-[#FBEFD9]`}>
+    <div className={`relative w-full ${heightClassName} rounded-3xl overflow-hidden shadow-md border border-[#2E1F16]/15`}>
+      {/* Map DOM Element */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {isLoading && (
-        <div className="absolute inset-0 bg-[#FBEFD9]/80 backdrop-blur-xs flex items-center justify-center z-20">
-          <div className="bg-[#FBEFD9] border border-[#2E1F16]/20 p-4 rounded-2xl shadow-md flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-[#2E1F16] border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-bold text-[#2E1F16]">Loading Duval Map...</span>
-          </div>
-        </div>
-      )}
-
-      {/* Top Left Legend */}
-      <div className="absolute top-3 left-3 z-10 bg-[#FBEFD9]/95 backdrop-blur-md border border-[#2E1F16]/15 p-4 rounded-2xl shadow-md text-xs text-[#2E1F16] max-w-[240px]">
-        <div className="flex items-center gap-2 mb-1.5 font-bold">
-          <span className="w-3.5 h-3.5 rounded-full bg-[#EFAE6E] border border-[#2E1F16] shadow-xs inline-block" />
-          <span>Selected High School</span>
-        </div>
-        <div className="flex items-center gap-2 mb-2.5 font-bold">
-          <span className="w-3.5 h-3.5 rounded-full bg-[#C1D7C2] border border-[#2E1F16] shadow-xs inline-block" />
-          <span>Closest Thrift Stores</span>
+      {/* Top Floating Control Bar */}
+      <div className="absolute top-3 left-3 right-3 sm:right-auto z-10 flex flex-wrap items-center gap-2">
+        {/* Count Badge & Toggle */}
+        <div className="bg-[#FBEFD9]/95 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-[#2E1F16]/15 shadow-md flex items-center gap-2 text-xs font-bold text-[#2E1F16]">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span>{displayStores.length} of {stores.length} Stores Shown</span>
+          {selectedSchool && (
+            <button
+              onClick={() => setShowAllPins(!showAllPins)}
+              className="ml-1 text-[11px] bg-[#EFAE6E] text-[#2E1F16] px-2 py-0.5 rounded-full hover:bg-[#e5a05b] cursor-pointer"
+            >
+              {showAllPins ? 'Show Closest 3' : `Show All ${stores.length}`}
+            </button>
+          )}
         </div>
 
+        {/* Selected School Pill */}
         {selectedSchool && (
-          <button
-            onClick={() => setShowAllPins(!showAllPins)}
-            className="w-full mb-2.5 text-center text-[11px] font-bold bg-[#F7E09A]/40 hover:bg-[#F7E09A] border border-[#2E1F16]/20 text-[#2E1F16] rounded-xl py-1.5 px-2 transition-colors cursor-pointer"
-          >
-            {showAllPins ? 'Focus on Top 3 Closest' : `Show All (${stores.length}) Stores`}
-          </button>
+          <div className="bg-[#2E1F16] text-[#FBEFD9] px-3 py-1.5 rounded-full shadow-md text-xs font-bold flex items-center gap-1.5 border border-[#F7E09A]/40">
+            <School className="w-3.5 h-3.5 text-[#EFAE6E]" />
+            <span className="truncate max-w-[150px] sm:max-w-[200px]">{selectedSchool.name}</span>
+            {onClearSchool && (
+              <button
+                onClick={onClearSchool}
+                className="hover:text-[#EFAE6E] ml-1 p-0.5 rounded-full"
+                title="Clear school selection"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         )}
 
-        <div className="pt-2 border-t border-[#2E1F16]/10 flex items-center justify-between gap-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#2E1F16]/60">Layer:</span>
-          <div className="inline-flex rounded-full border border-[#2E1F16]/20 p-0.5 bg-[#F7E09A]/30 text-[11px]">
-            <button
-              onClick={() => switchTileLayer('esri')}
-              className={`px-2.5 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
-                activeTileStyle === 'esri'
-                  ? 'bg-[#EFAE6E] text-[#2E1F16] shadow-xs'
-                  : 'text-[#2E1F16]/70 hover:text-[#2E1F16]'
-              }`}
-            >
-              Clean
-            </button>
-            <button
-              onClick={() => switchTileLayer('osm')}
-              className={`px-2.5 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
-                activeTileStyle === 'osm'
-                  ? 'bg-[#EFAE6E] text-[#2E1F16] shadow-xs'
-                  : 'text-[#2E1F16]/70 hover:text-[#2E1F16]'
-              }`}
-            >
-              OSM
-            </button>
-          </div>
+        {/* Tile Provider Switcher */}
+        <div className="hidden sm:flex items-center gap-1 bg-[#FBEFD9]/90 backdrop-blur-md border border-[#2E1F16]/15 rounded-full p-1 shadow-md text-xs">
+          <button
+            onClick={() => switchTileLayer('esri')}
+            className={`px-2.5 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
+              activeTileStyle === 'esri'
+                ? 'bg-[#2E1F16] text-[#FBEFD9]'
+                : 'text-[#2E1F16]/70 hover:text-[#2E1F16]'
+            }`}
+          >
+            Clean Map
+          </button>
+          <button
+            onClick={() => switchTileLayer('osm')}
+            className={`px-2.5 py-0.5 rounded-full font-bold transition-all cursor-pointer ${
+              activeTileStyle === 'osm'
+                ? 'bg-[#2E1F16] text-[#FBEFD9]'
+                : 'text-[#2E1F16]/70 hover:text-[#2E1F16]'
+            }`}
+          >
+            OSM
+          </button>
         </div>
       </div>
 
-      <div className="absolute top-16 right-3 z-10">
+      {/* Recenter Button */}
+      <div className="absolute top-3 right-3 z-10">
         <button
           onClick={handleResetDuvalCenter}
-          className="w-10 h-10 rounded-full bg-[#FBEFD9] hover:bg-white text-[#2E1F16] border border-[#2E1F16]/20 shadow-md flex items-center justify-center cursor-pointer transition-colors"
-          title="Reset map to Duval County center"
+          className="w-9 h-9 rounded-full bg-[#FBEFD9] hover:bg-white text-[#2E1F16] border border-[#2E1F16]/20 shadow-md flex items-center justify-center cursor-pointer transition-colors"
+          title="Reset map view to center of Duval County"
           aria-label="Reset Duval Map"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
 
+      {/* Interactive Store Preview Drawer */}
       {activePreviewStore && (
         <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-96 z-10 bg-[#FBEFD9]/95 backdrop-blur-md border border-[#2E1F16]/20 p-5 rounded-2xl shadow-xl animate-fade-in text-[#2E1F16]">
           <div className="flex items-start justify-between gap-2">
@@ -406,13 +346,15 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
             <span className="inline-flex items-center gap-1">
               <DoorOpen className="w-3.5 h-3.5 text-[#2E1F16]/60" />
               <span>
-                {activePreviewStore.store.fittingRoomsCount > 0 ? 'Fitting rooms open' : 'No fitting rooms'}
+                {activePreviewStore.store.fittingRoomsCount > 0
+                  ? `${activePreviewStore.store.fittingRoomsCount} Rooms Open`
+                  : 'No fitting rooms'}
               </span>
             </span>
             {activePreviewStore.store.hasFormalwear && (
               <>
                 <span>·</span>
-                <span className="text-[#2E1F16] font-bold bg-[#F7E09A] px-2 py-0.5 rounded">Formalwear</span>
+                <span className="text-[#2E1F16] font-bold bg-[#F7E09A] px-2 py-0.5 rounded">Formalwear Racks</span>
               </>
             )}
           </div>
