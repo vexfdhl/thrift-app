@@ -234,3 +234,122 @@
   background: transparent;
   border: none;
 }
+
+/* ============================================================
+   PHONE SIMULATOR ENHANCED MOBILE ENGINE
+   Enforces strict mobile dimensions, single-column stacks, mobile
+   typography, and touch ergonomics inside the phone simulator.
+============================================================ */
+.phone-simulator-frame {
+  width: 100% !important;
+  max-width: 412px !important;
+  height: 844px !important;
+  max-height: 88vh !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  border-radius: 48px !important;
+  border: 10px solid #2E1F16 !important;
+  background-color: #FBEFD9 !important;
+  box-shadow: 0 25px 60px -15px rgba(46, 31, 22, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Internal scroll container inside simulator */
+.phone-simulator-scroll {
+  flex: 1 1 0% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+/* Collapse all multi-column responsive classes inside the simulator frame */
+.phone-simulator-frame .grid {
+  grid-template-columns: 1fr !important;
+}
+
+.phone-simulator-frame .grid.phone-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+/* Reset column spans */
+.phone-simulator-frame [class*="col-span-"],
+.phone-simulator-frame [class*="lg:col-span-"],
+.phone-simulator-frame [class*="md:col-span-"],
+.phone-simulator-frame [class*="sm:col-span-"] {
+  grid-column: span 1 / span 1 !important;
+}
+
+/* Force vertical column stacking for flex-row containers */
+.phone-simulator-frame [class*="md:flex-row"],
+.phone-simulator-frame [class*="lg:flex-row"] {
+  flex-direction: column !important;
+}
+
+/* Hide desktop-only navigation and buttons inside the simulator */
+.phone-simulator-frame .desktop-only,
+.phone-simulator-frame [data-hide-in-simulator="true"] {
+  display: none !important;
+}
+
+/* Ensure mobile menu triggers are displayed in simulator */
+.phone-simulator-frame .mobile-only,
+.phone-simulator-frame [data-mobile-only="true"] {
+  display: flex !important;
+}
+
+/* Mobile typography scaling inside simulator */
+.phone-simulator-frame h1 {
+  font-size: 2rem !important;
+  line-height: 1.15 !important;
+}
+
+.phone-simulator-frame h2 {
+  font-size: 1.5rem !important;
+  line-height: 1.25 !important;
+}
+
+.phone-simulator-frame h3 {
+  font-size: 1.25rem !important;
+  line-height: 1.3 !important;
+}
+
+.phone-simulator-frame section {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  padding-top: 1.25rem !important;
+  padding-bottom: 1.25rem !important;
+}
+
+.phone-simulator-frame .max-w-7xl,
+.phone-simulator-frame .max-w-6xl,
+.phone-simulator-frame .max-w-5xl,
+.phone-simulator-frame .max-w-4xl,
+.phone-simulator-frame .max-w-2xl {
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Fix modals when inside or opened in simulator */
+.phone-simulator-frame .fixed.inset-0 {
+  position: absolute !important;
+  border-radius: 40px !important;
+  padding: 0.5rem !important;
+}
+
+.phone-simulator-frame .fixed.inset-0 > div {
+  max-height: 85% !important;
+  border-radius: 28px !important;
+}
+
+/* Map sizing inside simulator */
+.phone-simulator-frame .leaflet-container {
+  height: 380px !important;
+  min-height: 380px !important;
+}

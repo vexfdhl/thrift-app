@@ -417,7 +417,7 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[#2E1F16]/10">
+          <div className="grid grid-cols-2 phone-grid-2 gap-2 mt-3 pt-3 border-t border-[#2E1F16]/10">
             <a
               href={`https://maps.google.com/?q=${encodeURIComponent(
                 activePreviewStore.store.name + ' ' + activePreviewStore.store.address

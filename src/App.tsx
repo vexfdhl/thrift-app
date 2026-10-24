@@ -403,11 +403,21 @@ export default function App() {
   const moneySaved = calculatorItems * 24.5;
   const co2Prevented = (calculatorItems * 8.2).toFixed(1);
 
+  // Unified scroll helper for window and phone simulator container
+  const scrollToTop = () => {
+    if (isPhoneSimulatorMode) {
+      const scrollElem = document.querySelector('.phone-simulator-scroll');
+      if (scrollElem) scrollElem.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className={`min-h-screen ${isPhoneSimulatorMode ? 'bg-[#18110D] py-4 sm:py-8 px-2 sm:px-4' : 'bg-[#FBEFD9]'} text-[#2E1F16] font-['Nunito',sans-serif] flex flex-col selection:bg-[#C1D7C2] selection:text-[#2E1F16]`}>
+    <div className={`min-h-screen ${isPhoneSimulatorMode ? 'bg-[#18110D] py-3 sm:py-6 px-2 flex flex-col items-center justify-center overflow-x-hidden' : 'bg-[#FBEFD9] flex flex-col'} text-[#2E1F16] font-['Nunito',sans-serif] selection:bg-[#C1D7C2] selection:text-[#2E1F16]`}>
       {/* Phone Simulator Floating Control Banner */}
       {isPhoneSimulatorMode && (
-        <div className="max-w-[430px] mx-auto mb-3 bg-[#2E1F16] text-[#FBEFD9] px-4 py-2 rounded-2xl flex items-center justify-between shadow-xl border border-[#EFAE6E]/50 text-xs w-full shrink-0">
+        <div className="max-w-[412px] mx-auto mb-2 bg-[#2E1F16] text-[#FBEFD9] px-4 py-2 rounded-2xl flex items-center justify-between shadow-xl border border-[#EFAE6E]/50 text-xs w-full shrink-0">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold">📱 Duval Student iPhone View</span>
@@ -422,13 +432,16 @@ export default function App() {
       )}
 
       {/* Main Container / Phone Mockup Frame */}
-      <div className={isPhoneSimulatorMode ? 'max-w-[430px] mx-auto w-full bg-[#FBEFD9] rounded-[48px] border-[10px] border-[#2E1F16] shadow-2xl overflow-hidden flex flex-col relative min-h-[860px]' : 'w-full flex flex-col flex-1'}>
+      <div className={isPhoneSimulatorMode ? 'phone-simulator-frame' : 'w-full flex flex-col flex-1'}>
         {isPhoneSimulatorMode && (
           <IOSStatusBar
             islandText="ThriftFit DuvALL"
             onIslandClick={() => showToast('ThriftFit Dynamic Island · FL-04')}
           />
         )}
+
+        {/* Scrollable screen view inside phone */}
+        <div className={isPhoneSimulatorMode ? 'phone-simulator-scroll' : 'flex-1 w-full flex flex-col'}>
 
         {/* Toast Notification */}
         {toastMessage && (
@@ -525,7 +538,7 @@ export default function App() {
           <div
             onClick={() => {
               setCurrentView('home');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              scrollToTop();
             }}
             className="cursor-pointer shrink-0"
           >
@@ -533,7 +546,7 @@ export default function App() {
           </div>
 
           {/* Zone 2: Minimalist Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-1.5">
+          <nav className={`${isPhoneSimulatorMode ? 'hidden' : 'hidden md:flex'} items-center gap-1 lg:gap-1.5`}>
             {[
               { id: 'home', label: 'Discover' },
               { id: 'directory', label: `Directory (${stores.length})` },
@@ -547,7 +560,7 @@ export default function App() {
                   key={tab.id}
                   onClick={() => {
                     setCurrentView(tab.id as ViewMode);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    scrollToTop();
                   }}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                     isActive
@@ -563,28 +576,25 @@ export default function App() {
 
           {/* Zone 3: Interactive Action Cluster */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Phone View Simulator Toggle */}
-            <button
-              onClick={() => {
-                const nextMode = !isPhoneSimulatorMode;
-                setIsPhoneSimulatorMode(nextMode);
-                showToast(nextMode ? '📱 Switched to Phone Simulator View' : '💻 Switched to Full Desktop View');
-              }}
-              className={`hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer ${
-                isPhoneSimulatorMode
-                  ? 'bg-[#EFAE6E] text-[#2E1F16] border-[#2E1F16]/30 shadow-xs'
-                  : 'bg-[#C1D7C2]/50 hover:bg-[#C1D7C2] text-[#2E1F16] border-[#2E1F16]/15'
-              }`}
-              title="Toggle iPhone Phone Simulator"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>{isPhoneSimulatorMode ? 'Exit Phone' : 'Phone View'}</span>
-            </button>
+            {/* Phone View Simulator Toggle (Desktop only) */}
+            {!isPhoneSimulatorMode && (
+              <button
+                onClick={() => {
+                  setIsPhoneSimulatorMode(true);
+                  showToast('📱 Switched to Phone Simulator View');
+                }}
+                className="hidden sm:flex items-center gap-1.5 text-xs font-bold px-2.5 py-1.5 rounded-full border transition-all cursor-pointer bg-[#C1D7C2]/50 hover:bg-[#C1D7C2] text-[#2E1F16] border-[#2E1F16]/15"
+                title="Toggle iPhone Phone Simulator"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Phone View</span>
+              </button>
+            )}
 
             {/* Admin Portal Button */}
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              className="hidden lg:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#F7E09A]/50 hover:bg-[#F7E09A] px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer"
+              className={`${isPhoneSimulatorMode ? 'hidden' : 'hidden lg:flex'} items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#F7E09A]/50 hover:bg-[#F7E09A] px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer`}
               title="Teacher & District Admin Portal"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#2E1F16]" />
@@ -594,7 +604,7 @@ export default function App() {
             {/* Video Script Guide Button */}
             <button
               onClick={() => setIsVideoGuideOpen(true)}
-              className="hidden xl:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#EFAE6E]/30 hover:bg-[#EFAE6E]/60 px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer"
+              className={`${isPhoneSimulatorMode ? 'hidden' : 'hidden xl:flex'} items-center gap-1.5 text-xs font-bold text-[#2E1F16] bg-[#EFAE6E]/30 hover:bg-[#EFAE6E]/60 px-2.5 py-1.5 rounded-full border border-[#2E1F16]/15 transition-colors cursor-pointer`}
               title="Competition Video Presentation Script & Rubric Guide"
             >
               <VideoIcon className="w-3.5 h-3.5 text-[#2E1F16]" />
@@ -608,7 +618,7 @@ export default function App() {
               title="Compare selected stores side-by-side"
             >
               <Scale className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Compare</span>
+              <span className={isPhoneSimulatorMode ? 'hidden' : 'hidden sm:inline'}>Compare</span>
               <span className="w-4 h-4 rounded-full bg-[#EFAE6E] text-[#2E1F16] flex items-center justify-center text-[10px] font-bold">
                 {compareStoreIds.length}
               </span>
@@ -625,7 +635,7 @@ export default function App() {
                   savedStores.length > 0 ? 'fill-[#EFAE6E] text-[#EFAE6E]' : 'text-[#2E1F16]'
                 }`}
               />
-              <span className="hidden sm:inline">Saved</span>
+              <span className={isPhoneSimulatorMode ? 'hidden' : 'hidden sm:inline'}>Saved</span>
               <span className="w-4 h-4 rounded-full bg-[#EFAE6E] text-[#2E1F16] flex items-center justify-center text-[10px] font-bold">
                 {savedStores.length}
               </span>
@@ -634,7 +644,7 @@ export default function App() {
             {/* Surprise Me Button */}
             <button
               onClick={handleRandomStore}
-              className="hidden 2xl:flex items-center gap-1.5 text-xs font-bold text-[#2E1F16]/80 hover:text-[#2E1F16] px-2.5 py-1.5 rounded-full hover:bg-[#F7E09A]/40 cursor-pointer transition-colors"
+              className={`${isPhoneSimulatorMode ? 'hidden' : 'hidden 2xl:flex'} items-center gap-1.5 text-xs font-bold text-[#2E1F16]/80 hover:text-[#2E1F16] px-2.5 py-1.5 rounded-full hover:bg-[#F7E09A]/40 cursor-pointer transition-colors`}
               title="Pick a random store"
             >
               <Shuffle className="w-3.5 h-3.5" />
@@ -644,7 +654,7 @@ export default function App() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden w-8 h-8 rounded-full border border-[#2E1F16]/15 bg-[#FBEFD9] flex items-center justify-center text-[#2E1F16]"
+              className={`${isPhoneSimulatorMode ? 'flex' : 'md:hidden'} w-8 h-8 rounded-full border border-[#2E1F16]/15 bg-[#FBEFD9] flex items-center justify-center text-[#2E1F16] cursor-pointer`}
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4 text-[#2E1F16]" />}
@@ -654,7 +664,7 @@ export default function App() {
 
         {/* Mobile Dropdown Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-[#FBEFD9] border-b border-[#2E1F16]/15 p-4 space-y-2 animate-fade-in text-sm font-semibold text-[#2E1F16] shadow-md">
+          <div className={`${isPhoneSimulatorMode ? 'block' : 'md:hidden'} bg-[#FBEFD9] border-b border-[#2E1F16]/15 p-4 space-y-2 animate-fade-in text-sm font-semibold text-[#2E1F16] shadow-md`}>
             {[
               { id: 'home', label: 'Discover & Vibe Finder' },
               { id: 'directory', label: `Store Directory (${stores.length} Stores)` },
@@ -771,26 +781,26 @@ export default function App() {
         {currentView === 'home' && (
           <div className="w-full">
             {/* SECTION 1: HERO SECTION */}
-            <section className="w-full bg-[#FBEFD9] py-12 sm:py-20 px-4 sm:px-8 border-b border-[#2E1F16]/10">
-              <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            <section className={`w-full bg-[#FBEFD9] ${isPhoneSimulatorMode ? 'py-6 px-4' : 'py-12 sm:py-20 px-4 sm:px-8'} border-b border-[#2E1F16]/10`}>
+              <div className={isPhoneSimulatorMode ? 'w-full space-y-5 text-center' : 'max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center'}>
                 {/* Hero Left Content */}
-                <div className="lg:col-span-5 space-y-5 text-center lg:text-left">
+                <div className={`${isPhoneSimulatorMode ? 'space-y-4' : 'lg:col-span-5 space-y-5 text-center lg:text-left'}`}>
                   <div className="inline-block">
-                    <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#2E1F16]/70 block">
+                    <span className="text-[10px] sm:text-[11px] font-bold tracking-[0.2em] sm:tracking-[0.25em] uppercase text-[#2E1F16]/70 block">
                       DUVAL COUNTY STUDENT FASHION NETWORK · EST. 2026
                     </span>
                   </div>
 
-                  <h1 className="font-editorial text-5xl sm:text-7xl lg:text-8xl text-[#2E1F16] font-normal tracking-normal leading-[1.08]">
+                  <h1 className={`font-editorial ${isPhoneSimulatorMode ? 'text-4xl' : 'text-5xl sm:text-7xl lg:text-8xl'} text-[#2E1F16] font-normal tracking-normal leading-[1.08]`}>
                     Find Your <br />
                     <span className="font-editorial-italic font-normal text-[#EFAE6E]">Fit.</span>
                   </h1>
 
-                  <p className="text-[#2E1F16]/85 text-sm sm:text-base leading-relaxed max-w-md mx-auto lg:mx-0 font-normal">
+                  <p className="text-[#2E1F16]/85 text-xs sm:text-base leading-relaxed max-w-md mx-auto lg:mx-0 font-normal">
                     Your next favorite find is closer than you think. Discover student-verified thrift stores across Jacksonville with accurate campus driving distances, verified dressing rooms, and sustainable secondhand styles.
                   </p>
 
-                  <div className="pt-2 flex flex-wrap items-center justify-center lg:justify-start gap-3">
+                  <div className={`pt-2 flex flex-col sm:flex-row items-center justify-center ${isPhoneSimulatorMode ? '' : 'lg:justify-start'} gap-2.5 sm:gap-3`}>
                     <button
                       onClick={() => {
                         if (searchInputRef.current) {
@@ -798,7 +808,7 @@ export default function App() {
                           searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                       }}
-                      className="btn-clevr-brown text-sm"
+                      className="btn-clevr-brown text-xs sm:text-sm w-full sm:w-auto justify-center"
                     >
                       <span>Find Stores Near My School</span>
                       <ArrowRight className="w-4 h-4" />
@@ -806,9 +816,11 @@ export default function App() {
                     <button
                       onClick={() => {
                         setCurrentView('directory');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        const scrollElem = document.querySelector('.phone-simulator-scroll');
+                        if (scrollElem) scrollElem.scrollTo({ top: 0, behavior: 'smooth' });
+                        else window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="btn-clevr-outline text-sm"
+                      className="btn-clevr-outline text-xs sm:text-sm w-full sm:w-auto justify-center"
                     >
                       <span>Browse All Stores ({stores.length})</span>
                     </button>
@@ -816,33 +828,33 @@ export default function App() {
                 </div>
 
                 {/* Hero Right Visual Showcase */}
-                <div className="lg:col-span-7 relative flex justify-center items-center">
-                  <div className="relative w-full max-w-lg aspect-[4/3] sm:aspect-[16/11] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-[#F7E09A]/30">
+                <div className={`${isPhoneSimulatorMode ? 'w-full' : 'lg:col-span-7'} relative flex justify-center items-center pt-2`}>
+                  <div className="relative w-full max-w-lg aspect-[16/11] rounded-3xl overflow-hidden shadow-xl border-2 sm:border-4 border-white bg-[#F7E09A]/30">
                     <HeroThriftShowcase className="w-full h-full object-cover" />
 
                     {/* Warm gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#2E1F16]/40 via-transparent to-transparent pointer-events-none" />
 
                     {/* Bottom caption card */}
-                    <div className="absolute bottom-4 left-4 right-4 bg-[#FBEFD9]/95 backdrop-blur-md rounded-2xl p-4 border border-[#2E1F16]/10 shadow-lg flex items-center justify-between">
+                    <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 bg-[#FBEFD9]/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-[#2E1F16]/10 shadow-lg flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-bold text-[#2E1F16]">
+                        <div className="text-[11px] sm:text-xs font-bold text-[#2E1F16]">
                           Duval County Thrift Network
                         </div>
-                        <div className="text-[11px] text-[#2E1F16]/70">
-                          {stores.length} verified stores · 24 high school routes mapped
+                        <div className="text-[10px] sm:text-[11px] text-[#2E1F16]/70 truncate max-w-[190px] sm:max-w-none">
+                          {stores.length} verified stores · 24 campus routes
                         </div>
                       </div>
-                      <span className="text-xs font-bold text-[#2E1F16] bg-[#C1D7C2] px-2.5 py-1 rounded-full">
+                      <span className="text-[10px] sm:text-xs font-bold text-[#2E1F16] bg-[#C1D7C2] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full shrink-0">
                         100% Free
                       </span>
                     </div>
 
                     {/* Savings Badge */}
-                    <div className="absolute top-3 right-3 rotate-6 z-10">
-                      <div className="bg-[#EFAE6E] text-[#2E1F16] px-3.5 py-1.5 rounded-full shadow-lg border border-[#2E1F16]/20 flex items-center gap-1 text-xs font-black uppercase tracking-wider">
-                        <Sparkles className="w-3.5 h-3.5 text-[#2E1F16]" />
-                        <span>Save 70–90% Off Retail</span>
+                    <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 rotate-6 z-10">
+                      <div className="bg-[#EFAE6E] text-[#2E1F16] px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full shadow-lg border border-[#2E1F16]/20 flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider">
+                        <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#2E1F16]" />
+                        <span>Save 70–90%</span>
                       </div>
                     </div>
                   </div>
@@ -2007,22 +2019,40 @@ export default function App() {
         </div>
       </footer>
 
-        {/* iOS Home Indicator Bar when in simulator mode */}
+        {/* End of phone-simulator-scroll */}
+        </div>
+
+        {/* When in simulator mode, dock and iOS home indicator sit pinned inside the phone frame */}
         {isPhoneSimulatorMode && (
-          <div className="w-full py-2.5 bg-[#2E1F16] flex justify-center shrink-0">
-            <div className="w-32 h-1 bg-white/40 rounded-full" />
+          <div className="shrink-0 w-full bg-[#FBEFD9] border-t border-[#2E1F16]/10 z-40">
+            <MobileBottomDock
+              currentView={currentView}
+              isSimulator={true}
+              onChangeView={view => {
+                setCurrentView(view as ViewMode);
+                const scrollElem = document.querySelector('.phone-simulator-scroll');
+                if (scrollElem) scrollElem.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+            <div className="w-full py-2 bg-[#FBEFD9] flex justify-center">
+              <div className="w-28 h-1 bg-[#2E1F16]/30 rounded-full" />
+            </div>
           </div>
         )}
+
+      {/* End of phone-simulator-frame */}
       </div>
 
-      {/* MOBILE STICKY BOTTOM DOCK */}
-      <MobileBottomDock
-        currentView={currentView}
-        onChangeView={view => {
-          setCurrentView(view as ViewMode);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
+      {/* MOBILE STICKY BOTTOM DOCK (For native mobile devices when not in simulator preview) */}
+      {!isPhoneSimulatorMode && (
+        <MobileBottomDock
+          currentView={currentView}
+          onChangeView={view => {
+            setCurrentView(view as ViewMode);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      )}
     </div>
   );
 }
