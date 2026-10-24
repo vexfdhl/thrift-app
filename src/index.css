@@ -1,4 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-editorial: 'Instrument Serif', Georgia, serif;
+  --font-cloud: 'Instrument Serif', Georgia, serif;
+  --font-sans: 'Nunito', system-ui, -apple-system, sans-serif;
+}
 
 @layer base {
   body {
@@ -8,22 +16,28 @@
     font-size: 14px;
     line-height: 1.5;
   }
+
+  h1, h2, h3 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    letter-spacing: -0.01em;
+  }
 }
 
-/* "Head in the Clouds" title font per Mags's PDF design spec */
+/* User's editorial condensed serif from screenshot & PDF design */
 .font-cloud {
-  font-family: 'DynaPuff', cursive, sans-serif;
+  font-family: 'Instrument Serif', Georgia, serif;
   letter-spacing: -0.01em;
 }
 
 .cloud-title {
-  font-family: 'DynaPuff', cursive, sans-serif;
+  font-family: 'Instrument Serif', Georgia, serif;
   letter-spacing: -0.01em;
   text-shadow: 0 2px 8px rgba(239, 174, 110, 0.25);
 }
 
 .font-editorial {
-  font-family: 'DynaPuff', cursive, sans-serif;
+  font-family: 'Instrument Serif', Georgia, serif;
+  letter-spacing: -0.01em;
 }
 
 .font-editorial-italic {
