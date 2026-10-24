@@ -27,6 +27,7 @@ interface StoreDirectoryProps {
   selectedSchool: SchoolItem | null;
   onSelectStore: (store: ThriftStoreItem) => void;
   onQuickPeek?: (store: ThriftStoreItem) => void;
+  onOpenNavigate?: (store: ThriftStoreItem) => void;
   onSelectSchool: (school: SchoolItem) => void;
   allSchools: SchoolItem[];
   initialFittingRoomsOnly?: boolean;
@@ -42,6 +43,7 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
   selectedSchool,
   onSelectStore,
   onQuickPeek,
+  onOpenNavigate,
   onSelectSchool,
   allSchools,
   initialFittingRoomsOnly = false,
@@ -399,11 +401,11 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="font-editorial text-2xl text-[#2E1F16] font-bold group-hover:text-[#EFAE6E] transition-colors leading-tight">
+                    <h3 className="font-cloud text-xl text-[#2E1F16] font-bold group-hover:text-[#EFAE6E] transition-colors leading-tight">
                       {store.name}
                     </h3>
                     <p className="text-xs text-[#2E1F16]/70 flex items-center gap-1 mt-1 truncate">
-                      <MapPin className="w-3.5 h-3.5 text-[#2E1F16]/40 shrink-0" />
+                      <MapPin className="w-3.5 h-3.5 text-[#EFAE6E] shrink-0" />
                       <span>{store.address} · {store.city}</span>
                     </p>
                   </div>
@@ -411,6 +413,12 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
                   <p className="text-xs text-[#2E1F16]/80 line-clamp-2 leading-relaxed bg-[#FBEFD9]/50 p-2.5 rounded-xl border border-[#2E1F16]/10">
                     {store.priceNotes}
                   </p>
+
+                  {/* Clothing breakdown preview */}
+                  <div className="text-[11px] text-[#2E1F16]/75 bg-white p-2 rounded-xl border border-[#2E1F16]/10 space-y-0.5">
+                    <p className="truncate"><strong>👗 Women:</strong> {store.womensClothingAmount}</p>
+                    <p className="truncate"><strong>👔 Men:</strong> {store.mensClothingAmount}</p>
+                  </div>
 
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#2E1F16]/80 pt-1">
                     <span className="flex items-center gap-1">
@@ -428,19 +436,40 @@ export const StoreDirectory: React.FC<StoreDirectoryProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-4 mt-2 border-t border-[#2E1F16]/10 flex items-center justify-between text-xs">
-                  {onQuickPeek && (
+                <div className="pt-3 mt-2 border-t border-[#2E1F16]/10 flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-2">
+                    {onQuickPeek && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          onQuickPeek(store);
+                        }}
+                        className="text-xs font-bold text-[#2E1F16]/70 hover:text-[#2E1F16] flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Quick Peek</span>
+                      </button>
+                    )}
+
                     <button
                       onClick={e => {
                         e.stopPropagation();
-                        onQuickPeek(store);
+                        if (onOpenNavigate) {
+                          onOpenNavigate(store);
+                        } else {
+                          window.open(
+                            `https://maps.google.com/?q=${encodeURIComponent(store.name + ' ' + store.address)}`,
+                            '_blank'
+                          );
+                        }
                       }}
-                      className="text-xs font-bold text-[#2E1F16]/70 hover:text-[#2E1F16] flex items-center gap-1"
+                      className="text-xs font-bold text-[#2E1F16] hover:text-[#EFAE6E] flex items-center gap-1 cursor-pointer"
+                      title="Open navigation directions"
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Quick Peek</span>
+                      <Navigation className="w-3.5 h-3.5 text-[#EFAE6E]" />
+                      <span>Navigate</span>
                     </button>
-                  )}
+                  </div>
 
                   <span className="text-xs font-bold text-[#2E1F16] group-hover:text-[#EFAE6E] flex items-center gap-1 ml-auto">
                     <span>View Store</span>

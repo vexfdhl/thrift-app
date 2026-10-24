@@ -15,16 +15,25 @@ const STORES_COLLECTION = 'stores';
 const REVIEWS_COLLECTION = 'reviews';
 
 /**
- * Seed all initial 15 thrift stores to Firestore if they do not exist
+ * Seed only authentic stores from Mags's PDF to Firestore and prune any non-PDF items
  */
 export async function seedInitialStoresToFirestore(): Promise<void> {
   try {
     const existingSnap = await getDocs(collection(db, STORES_COLLECTION));
+    const pdfIds = new Set(INITIAL_THRIFT_STORES.map(s => s.id));
+
+    // Prune any legacy non-PDF store documents
+    for (const docSnap of existingSnap.docs) {
+      if (!pdfIds.has(docSnap.id)) {
+        await deleteDoc(doc(db, STORES_COLLECTION, docSnap.id));
+      }
+    }
+
     const existingIds = new Set(existingSnap.docs.map(d => d.id));
 
     const promises = INITIAL_THRIFT_STORES.map(async (store) => {
+      const storeRef = doc(db, STORES_COLLECTION, store.id);
       if (!existingIds.has(store.id)) {
-        const storeRef = doc(db, STORES_COLLECTION, store.id);
         await setDoc(storeRef, {
           ...store,
           isPublished: store.isPublished ?? true,
@@ -34,7 +43,6 @@ export async function seedInitialStoresToFirestore(): Promise<void> {
     });
 
     await Promise.all(promises);
-    console.log('Successfully verified/seeded all 15 stores in Firestore.');
   } catch (error) {
     console.warn('Could not auto-seed stores to Firestore (using local fallback):', error);
   }
@@ -42,15 +50,15 @@ export async function seedInitialStoresToFirestore(): Promise<void> {
 
 /**
  * Real-time subscription to thrift stores.
- * Merges Firestore documents with INITIAL_THRIFT_STORES so all 15 stores are always preserved!
+ * Guarantees that only stores from Mags's PDF are listed in the directory!
  */
 export function subscribeToStores(
   onUpdate: (stores: ThriftStoreItem[]) => void
 ): () => void {
-  // Immediately call with initial 15 stores so user never sees empty screen
+  // Immediately call with initial PDF stores so user never sees empty screen
   onUpdate(INITIAL_THRIFT_STORES);
 
-  // Auto-seed missing stores in background
+  // Auto-seed and prune non-PDF stores in background
   seedInitialStoresToFirestore();
 
   try {
@@ -59,7 +67,6 @@ export function subscribeToStores(
       storesRef,
       (snapshot) => {
         if (snapshot.empty) {
-          // If Firestore collection has 0 documents, show all 15 initial stores
           onUpdate(INITIAL_THRIFT_STORES);
           return;
         }
@@ -69,31 +76,18 @@ export function subscribeToStores(
           firestoreMap.set(docSnap.id, { id: docSnap.id, ...(docSnap.data() as any) });
         });
 
-        // Merge: Start with INITIAL_THRIFT_STORES, override with any Firestore edits
-        const merged: ThriftStoreItem[] = [];
-        const seenIds = new Set<string>();
-
-        INITIAL_THRIFT_STORES.forEach((initialStore) => {
-          seenIds.add(initialStore.id);
+        // Merge only authentic PDF stores: use Firestore updates if available, else local
+        const merged: ThriftStoreItem[] = INITIAL_THRIFT_STORES.map((initialStore) => {
           if (firestoreMap.has(initialStore.id)) {
-            const fsStore = firestoreMap.get(initialStore.id)!;
-            merged.push(fsStore);
-          } else {
-            merged.push(initialStore);
+            return firestoreMap.get(initialStore.id)!;
           }
-        });
-
-        // Also add any completely new stores created by admin in Firestore
-        firestoreMap.forEach((fsStore, id) => {
-          if (!seenIds.has(id)) {
-            merged.push(fsStore);
-          }
+          return initialStore;
         });
 
         onUpdate(merged);
       },
       (error) => {
-        console.warn('Firestore subscription error (falling back to initial 15 stores):', error);
+        console.warn('Firestore subscription error (falling back to initial PDF stores):', error);
         onUpdate(INITIAL_THRIFT_STORES);
       }
     );

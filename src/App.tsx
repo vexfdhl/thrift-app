@@ -32,6 +32,7 @@ import { FavoritesModal } from './components/FavoritesModal';
 import { QuickPeekModal } from './components/QuickPeekModal';
 import { AdminPortalModal } from './components/AdminPortalModal';
 import { VideoGuideModal } from './components/VideoGuideModal';
+import { NavigationGuideModal } from './components/NavigationGuideModal';
 
 import {
   Search,
@@ -51,7 +52,9 @@ import {
   DollarSign,
   Leaf,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  FileText,
+  Navigation
 } from 'lucide-react';
 
 type ViewMode = 'home' | 'directory' | 'map' | 'reviews' | 'about' | 'detail';
@@ -75,6 +78,13 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isVideoGuideOpen, setIsVideoGuideOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavigationModalOpen, setIsNavigationModalOpen] = useState(false);
+  const [navigationTargetStore, setNavigationTargetStore] = useState<ThriftStoreItem | null>(null);
+
+  const handleOpenNavigation = (store: ThriftStoreItem) => {
+    setNavigationTargetStore(store);
+    setIsNavigationModalOpen(true);
+  };
 
   // Phone Simulator state
   const [isPhoneSimulatorMode, setIsPhoneSimulatorMode] = useState(false);
@@ -288,6 +298,7 @@ export default function App() {
             selectedSchool={selectedSchool}
             onToggleSave={id => handleToggleSaveStore(id)}
             onSelectStore={handleOpenStoreDetail}
+            onOpenNavigate={handleOpenNavigation}
             onToggleCompare={id => handleToggleCompareStore(id)}
             compareStoreIds={compareStoreIds}
           />
@@ -299,10 +310,26 @@ export default function App() {
             onClose={() => setIsQuickPeekOpen(false)}
             selectedSchool={selectedSchool}
             onOpenFullDetail={handleOpenStoreDetail}
+            onOpenNavigate={handleOpenNavigation}
             isSaved={quickPeekStore ? savedStores.includes(quickPeekStore.id) : false}
             onToggleSave={id => handleToggleSaveStore(id)}
             isCompared={quickPeekStore ? compareStoreIds.includes(quickPeekStore.id) : false}
             onToggleCompare={id => handleToggleCompareStore(id)}
+          />
+
+          {/* Turn-by-Turn Navigation Modal */}
+          <NavigationGuideModal
+            isOpen={isNavigationModalOpen}
+            onClose={() => setIsNavigationModalOpen(false)}
+            store={navigationTargetStore}
+            selectedSchool={selectedSchool}
+            onSelectSchool={handleSelectSchool}
+            onViewOnDuvalMap={store => {
+              setActiveStoreDetail(store);
+              setCurrentView('map');
+              scrollToTop();
+            }}
+            onToast={showToast}
           />
 
           {/* Admin Portal Modal */}
@@ -324,7 +351,7 @@ export default function App() {
           {/* 1. TOP ANNOUNCEMENT BAR */}
           <div className="w-full bg-[#2E1F16] text-[#FBEFD9] text-[11px] sm:text-xs py-2 px-4 border-b border-[#2E1F16] flex items-center justify-between">
             <button
-              onClick={() => showToast('Student discounts verified across 15 Jacksonville thrift stores')}
+              onClick={() => showToast(`Student discounts verified across ${stores.length} Jacksonville thrift stores from PDF`)}
               className="text-[#FBEFD9]/70 hover:text-[#EFAE6E] cursor-pointer transition-colors"
               aria-label="Previous announcement"
             >
@@ -334,7 +361,7 @@ export default function App() {
             <div className="flex items-center gap-2 font-medium tracking-wide text-center truncate">
               <span className="font-bold text-[#EFAE6E]">Thrift More. Waste Less:</span>
               <span className="truncate">
-                Connecting 24 Duval High Schools to 15 verified secondhand racks &amp; open dressing rooms!
+                Connecting 24 Duval High Schools to {stores.length} verified secondhand racks &amp; open dressing rooms!
               </span>
             </div>
 
@@ -540,16 +567,16 @@ export default function App() {
                         </span>
                       </div>
 
-                      <h1 className={`font-editorial ${isPhoneSimulatorMode ? 'text-4xl' : 'text-5xl sm:text-7xl lg:text-8xl'} text-[#2E1F16] font-normal tracking-normal leading-[1.08]`}>
+                      <h1 className={`font-cloud ${isPhoneSimulatorMode ? 'text-4xl' : 'text-5xl sm:text-7xl lg:text-8xl'} text-[#2E1F16] font-bold tracking-normal leading-[1.08]`}>
                         Find Your <br />
-                        <span className="font-editorial-italic font-normal text-[#EFAE6E]">Fit.</span>
+                        <span className="text-[#EFAE6E]">Fit.</span>
                       </h1>
 
                       <p className="text-[#2E1F16]/85 text-xs sm:text-base leading-relaxed max-w-md mx-auto lg:mx-0 font-normal">
                         Your next favorite find is closer than you think. Discover {stores.length} student-verified thrift stores across Jacksonville with accurate campus driving distances, verified dressing rooms, and sustainable secondhand styles.
                       </p>
 
-                      <div className={`pt-2 flex flex-col sm:flex-row items-center justify-center ${isPhoneSimulatorMode ? '' : 'lg:justify-start'} gap-2.5 sm:gap-3`}>
+                      <div className={`pt-2 flex flex-col sm:flex-row flex-wrap items-center justify-center ${isPhoneSimulatorMode ? '' : 'lg:justify-start'} gap-2.5 sm:gap-3`}>
                         <button
                           onClick={() => {
                             if (searchInputRef.current) {
@@ -569,7 +596,7 @@ export default function App() {
                           }}
                           className="btn-clevr-outline text-xs sm:text-sm w-full sm:w-auto justify-center"
                         >
-                          <span>Browse All Stores ({stores.length})</span>
+                          <span>Browse Stores ({stores.length})</span>
                         </button>
                       </div>
                     </div>
@@ -631,7 +658,7 @@ export default function App() {
                         <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#2E1F16]/70 block">
                           INTERACTIVE DUVAL CARTOGRAPHY
                         </span>
-                        <h2 className="font-editorial text-2xl sm:text-3xl text-[#2E1F16]">
+                        <h2 className="font-cloud text-2xl sm:text-3xl text-[#2E1F16]">
                           Jacksonville Thrift Map ({stores.length} Locations)
                         </h2>
                         <p className="text-xs text-[#2E1F16]/70 mt-0.5">
@@ -655,6 +682,7 @@ export default function App() {
                       selectedSchool={selectedSchool}
                       stores={stores}
                       onSelectStore={handleOpenStoreDetail}
+                      onOpenNavigate={handleOpenNavigation}
                       onClearSchool={handleClearSchool}
                       heightClassName={isPhoneSimulatorMode ? 'h-[360px]' : 'h-[460px] sm:h-[520px]'}
                     />
@@ -738,6 +766,7 @@ export default function App() {
                 selectedSchool={selectedSchool}
                 onSelectStore={handleOpenStoreDetail}
                 onQuickPeek={handleQuickPeek}
+                onOpenNavigate={handleOpenNavigation}
                 onSelectSchool={handleSelectSchool}
                 allSchools={DUVAL_SCHOOLS}
                 savedStores={savedStores}
@@ -753,7 +782,7 @@ export default function App() {
               <div className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-editorial text-3xl text-[#2E1F16]">
+                    <h2 className="font-cloud text-3xl text-[#2E1F16]">
                       Duval County Cartography ({stores.length} Stores)
                     </h2>
                     <p className="text-xs text-[#2E1F16]/70">
@@ -766,6 +795,7 @@ export default function App() {
                   selectedSchool={selectedSchool}
                   stores={stores}
                   onSelectStore={handleOpenStoreDetail}
+                  onOpenNavigate={handleOpenNavigation}
                   onClearSchool={handleClearSchool}
                   heightClassName="h-[600px] sm:h-[700px]"
                 />
@@ -785,6 +815,7 @@ export default function App() {
                   setCurrentView('map');
                   scrollToTop();
                 }}
+                onOpenNavigate={handleOpenNavigation}
                 onAddReview={handleAddReview}
                 onToast={showToast}
                 isSaved={savedStores.includes(activeStoreDetail.id)}
@@ -798,7 +829,7 @@ export default function App() {
             {currentView === 'reviews' && (
               <div className="w-full max-w-4xl mx-auto px-4 sm:px-8 py-10 space-y-6">
                 <div className="text-center space-y-1">
-                  <h2 className="font-editorial text-3xl sm:text-4xl text-[#2E1F16]">
+                  <h2 className="font-cloud text-3xl sm:text-4xl text-[#2E1F16]">
                     Student Reviews &amp; Thrifting Tips
                   </h2>
                   <p className="text-xs text-[#2E1F16]/70">
@@ -833,7 +864,7 @@ export default function App() {
                   <span className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#2E1F16]/70 block">
                     OUR SUSTAINABILITY CHARTER
                   </span>
-                  <h2 className="font-editorial text-3xl sm:text-4xl text-[#2E1F16]">
+                  <h2 className="font-cloud text-3xl sm:text-4xl text-[#2E1F16]">
                     ThriftFit DuvALL Initiative
                   </h2>
                 </div>

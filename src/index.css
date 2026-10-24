@@ -5,11 +5,25 @@
     background-color: #FBEFD9;
     color: #2E1F16;
     font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
   }
 }
 
+/* "Head in the Clouds" title font per Mags's PDF design spec */
+.font-cloud {
+  font-family: 'DynaPuff', cursive, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.cloud-title {
+  font-family: 'DynaPuff', cursive, sans-serif;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(239, 174, 110, 0.25);
+}
+
 .font-editorial {
-  font-family: 'Instrument Serif', Georgia, serif;
+  font-family: 'DynaPuff', cursive, sans-serif;
 }
 
 .font-editorial-italic {

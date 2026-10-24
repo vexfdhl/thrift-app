@@ -170,6 +170,8 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
       formalwearNotes: newHasFormal ? 'Prom & homecoming racks available.' : 'Casual focus.',
       categories: ['Casual Wear', 'Denim', 'Jackets'],
       sustainableMaterials: ['Cotton', 'Denim'],
+      womensClothingAmount: 'Moderate to high casual & formal selections',
+      mensClothingAmount: 'Good selection of men’s casual & streetwear',
       overallSummary: newSummary || `Verified local thrift store in ${newCity}, FL.`,
       isOpenNow: true,
       openNowText: 'Open Today',
@@ -192,7 +194,7 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
   const handleSeedAll = async () => {
     try {
       await seedInitialStoresToFirestore();
-      onToast('All 15 verified Duval thrift stores synced to Firestore!');
+      onToast('All 20 verified PDF thrift stores synced to Firestore!');
     } catch (err) {
       onToast(`Sync error: ${err}`);
     }
@@ -371,10 +373,10 @@ export const AdminPortalModal: React.FC<AdminPortalModalProps> = ({
               <button
                 onClick={handleSeedAll}
                 className="px-3 py-1 rounded-full bg-[#C1D7C2] text-[#2E1F16] font-bold text-[11px] hover:bg-[#a9c7aa] transition-colors cursor-pointer flex items-center gap-1"
-                title="Verify all 15 stores are populated in Firestore"
+                title="Verify all 20 PDF stores are populated in Firestore"
               >
                 <RefreshCw className="w-3 h-3" />
-                <span>Sync All 15 Stores to Firestore</span>
+                <span>Sync All 20 PDF Stores to Firestore</span>
               </button>
             </div>
 

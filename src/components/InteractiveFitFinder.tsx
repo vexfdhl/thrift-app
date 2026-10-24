@@ -22,6 +22,7 @@ interface InteractiveFitFinderProps {
   selectedSchool: SchoolItem | null;
   onSelectStore: (store: ThriftStoreItem) => void;
   onQuickPeek: (store: ThriftStoreItem) => void;
+  onOpenNavigate?: (store: ThriftStoreItem) => void;
   onToggleSave: (storeId: string) => void;
   savedStores: string[];
   onToggleCompare: (storeId: string) => void;
@@ -99,6 +100,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
   selectedSchool,
   onSelectStore,
   onQuickPeek,
+  onOpenNavigate,
   onToggleSave,
   savedStores,
   onToggleCompare,
@@ -191,8 +193,8 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
           <span className="text-[11px] font-bold tracking-[0.25em] uppercase text-[#2E1F16]/70 block">
             AESTHETIC &amp; BUDGET VIBE FINDER
           </span>
-          <h2 className="font-editorial text-3xl sm:text-5xl text-[#2E1F16] font-normal">
-            Match Your Style to <span className="font-editorial-italic text-[#EFAE6E]">Jacksonville Racks</span>
+          <h2 className="font-cloud text-3xl sm:text-5xl text-[#2E1F16] font-bold">
+            Match Your Style to <span className="text-[#EFAE6E]">Jacksonville Racks</span>
           </h2>
           <p className="text-xs sm:text-sm text-[#2E1F16]/75">
             Select what you are shopping for today to instantly highlight the best 3 Duval thrift stores matching your campus.
@@ -264,7 +266,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="font-editorial text-2xl text-[#2E1F16] font-normal leading-snug">
+                    <h3 className="font-cloud text-xl text-[#2E1F16] font-bold leading-snug">
                       {store.name}
                     </h3>
                     <p className="text-xs text-[#2E1F16]/65 mt-1 truncate">
@@ -302,10 +304,24 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
                   </button>
 
                   <button
-                    onClick={() => onSelectStore(store)}
-                    className="py-2 px-4 rounded-full text-xs font-semibold bg-[#EFAE6E] hover:bg-[#e5a05b] text-[#2E1F16] transition-colors flex items-center justify-center gap-1 cursor-pointer font-bold shadow-xs"
+                    onClick={() => {
+                      if (onOpenNavigate) {
+                        onOpenNavigate(store);
+                      } else {
+                        onSelectStore(store);
+                      }
+                    }}
+                    className="py-2 px-3.5 rounded-full text-xs font-semibold bg-[#2E1F16] text-[#FBEFD9] hover:bg-[#443024] transition-colors flex items-center justify-center gap-1 cursor-pointer font-bold shadow-xs"
+                    title="Navigate to store"
                   >
-                    <span>Full Store</span>
+                    <span>Navigate</span>
+                  </button>
+
+                  <button
+                    onClick={() => onSelectStore(store)}
+                    className="py-2 px-3.5 rounded-full text-xs font-semibold bg-[#EFAE6E] hover:bg-[#e5a05b] text-[#2E1F16] transition-colors flex items-center justify-center gap-1 cursor-pointer font-bold shadow-xs"
+                  >
+                    <span>Details</span>
                     <ArrowRight className="w-3 h-3 text-[#2E1F16]" />
                   </button>
                 </div>
@@ -321,7 +337,7 @@ export const InteractiveFitFinder: React.FC<InteractiveFitFinderProps> = ({
               <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#2E1F16] bg-[#C1D7C2]/60 px-2.5 py-0.5 rounded-full inline-block mb-1">
                 LIVE OUTFIT COST SIMULATOR
               </span>
-              <h3 className="font-editorial text-2xl sm:text-3xl text-[#2E1F16] font-normal">
+              <h3 className="font-cloud text-2xl sm:text-3xl text-[#2E1F16] font-bold">
                 Mall Fast Fashion <span className="font-editorial-italic font-normal text-[#EFAE6E]">vs.</span> Secondhand DuvALL
               </h3>
               <p className="text-xs text-[#2E1F16]/70 mt-0.5">

@@ -210,6 +210,26 @@ export const CompareModal: React.FC<CompareModalProps> = ({
                     ))}
                   </tr>
 
+                  {/* PDF Requirement: Amount of Women's Clothing */}
+                  <tr>
+                    <td className="p-3 font-bold text-[#2E1F16]/70">Women’s Clothing</td>
+                    {compareStores.map(store => (
+                      <td key={store.id} className="p-3 font-medium text-[#2E1F16]/80 text-[11px]">
+                        {store.womensClothingAmount || 'General casual & vintage'}
+                      </td>
+                    ))}
+                  </tr>
+
+                  {/* PDF Requirement: Amount of Men's Clothing */}
+                  <tr>
+                    <td className="p-3 font-bold text-[#2E1F16]/70">Men’s Clothing</td>
+                    {compareStores.map(store => (
+                      <td key={store.id} className="p-3 font-medium text-[#2E1F16]/80 text-[11px]">
+                        {store.mensClothingAmount || 'General casual'}
+                      </td>
+                    ))}
+                  </tr>
+
                   {/* Top Garment Categories */}
                   <tr>
                     <td className="p-3 font-bold text-[#2E1F16]/70">Categories</td>

@@ -21,6 +21,7 @@ interface FavoritesModalProps {
   selectedSchool: SchoolItem | null;
   onToggleSave: (storeId: string) => void;
   onSelectStore: (store: ThriftStoreItem) => void;
+  onOpenNavigate?: (store: ThriftStoreItem) => void;
   onToggleCompare?: (storeId: string) => void;
   compareStoreIds?: string[];
 }
@@ -33,6 +34,7 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
   selectedSchool,
   onToggleSave,
   onSelectStore,
+  onOpenNavigate,
   onToggleCompare,
   compareStoreIds = [],
 }) => {
@@ -140,16 +142,24 @@ export const FavoritesModal: React.FC<FavoritesModalProps> = ({
                       </button>
                     )}
 
-                    <a
-                      href={`https://maps.google.com/?q=${encodeURIComponent(store.name + ' ' + store.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        onClose();
+                        if (onOpenNavigate) {
+                          onOpenNavigate(store);
+                        } else {
+                          window.open(
+                            `https://maps.google.com/?q=${encodeURIComponent(store.name + ' ' + store.address)}`,
+                            '_blank'
+                          );
+                        }
+                      }}
                       className="p-2 rounded-xl border border-[#2E1F16]/20 hover:bg-[#FBEFD9] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                      title="Open Google Maps Directions"
+                      title="Navigate to store"
                     >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Directions</span>
-                    </a>
+                      <Navigation className="w-3.5 h-3.5 text-[#EFAE6E]" />
+                      <span className="hidden sm:inline">Navigate</span>
+                    </button>
 
                     <button
                       onClick={() => {

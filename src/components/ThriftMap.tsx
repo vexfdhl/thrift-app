@@ -21,6 +21,7 @@ interface ThriftMapProps {
   selectedSchool: SchoolItem | null;
   stores: ThriftStoreItem[];
   onSelectStore: (store: ThriftStoreItem) => void;
+  onOpenNavigate?: (store: ThriftStoreItem) => void;
   onClearSchool?: () => void;
   heightClassName?: string;
 }
@@ -44,6 +45,7 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
   selectedSchool,
   stores,
   onSelectStore,
+  onOpenNavigate,
   onClearSchool,
   heightClassName = 'h-[460px] sm:h-[530px] md:h-[600px]',
 }) => {
@@ -320,11 +322,11 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
                 )}
               </div>
 
-              <h4 className="font-editorial text-xl text-[#2E1F16] mt-1.5 leading-snug">
+              <h4 className="font-cloud text-lg text-[#2E1F16] mt-1.5 leading-snug">
                 {activePreviewStore.store.name}
               </h4>
               <p className="text-xs text-[#2E1F16]/70 flex items-center gap-1 mt-0.5 truncate font-medium">
-                <MapPin className="w-3.5 h-3.5 text-[#2E1F16]/50 shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-[#EFAE6E] shrink-0" />
                 <span>{activePreviewStore.store.address}</span>
               </p>
             </div>
@@ -354,23 +356,30 @@ export const ThriftMap: React.FC<ThriftMapProps> = ({
             {activePreviewStore.store.hasFormalwear && (
               <>
                 <span>·</span>
-                <span className="text-[#2E1F16] font-bold bg-[#F7E09A] px-2 py-0.5 rounded">Formalwear Racks</span>
+                <span className="text-[#2E1F16] font-bold bg-[#F7E09A] px-2 py-0.5 rounded">Formalwear</span>
               </>
             )}
           </div>
 
           <div className="grid grid-cols-2 phone-grid-2 gap-2 mt-3 pt-3 border-t border-[#2E1F16]/10">
-            <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(
-                activePreviewStore.store.name + ' ' + activePreviewStore.store.address
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-clevr-outline text-xs py-2 px-3 justify-center"
+            <button
+              onClick={() => {
+                if (onOpenNavigate) {
+                  onOpenNavigate(activePreviewStore.store);
+                } else {
+                  window.open(
+                    `https://maps.google.com/?q=${encodeURIComponent(
+                      activePreviewStore.store.name + ' ' + activePreviewStore.store.address
+                    )}`,
+                    '_blank'
+                  );
+                }
+              }}
+              className="btn-clevr-outline text-xs py-2 px-3 justify-center gap-1.5 cursor-pointer font-bold"
             >
               <Navigation className="w-3.5 h-3.5" />
-              <span>Directions</span>
-            </a>
+              <span>Navigate</span>
+            </button>
 
             <button
               onClick={() => onSelectStore(activePreviewStore.store)}

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, setDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, doc, setDoc, deleteDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { INITIAL_THRIFT_STORES } from '../src/data/thriftStores';
 import configJson from '../firebase-applet-config.json';
 
@@ -11,6 +11,17 @@ async function seed() {
   const snap = await getDocs(collection(db, 'stores'));
   console.log(`Current stores count in Firestore: ${snap.size}`);
 
+  const pdfStoreIds = new Set(INITIAL_THRIFT_STORES.map(s => s.id));
+
+  // 1. Remove any legacy or non-PDF stores
+  for (const docSnap of snap.docs) {
+    if (!pdfStoreIds.has(docSnap.id)) {
+      console.log(`Removing non-PDF store: ${docSnap.id}`);
+      await deleteDoc(doc(db, 'stores', docSnap.id));
+    }
+  }
+
+  // 2. Seed/Update only authentic PDF stores
   for (const store of INITIAL_THRIFT_STORES) {
     const storeRef = doc(db, 'stores', store.id);
     await setDoc(storeRef, {
@@ -18,11 +29,11 @@ async function seed() {
       isPublished: true,
       updatedAt: serverTimestamp(),
     }, { merge: true });
-    console.log(`✓ Seeded/Updated store: ${store.name} (${store.id})`);
+    console.log(`✓ Verified PDF store: ${store.name} (${store.id})`);
   }
 
   const finalSnap = await getDocs(collection(db, 'stores'));
-  console.log(`Final stores count in Firestore: ${finalSnap.size}`);
+  console.log(`Final stores count in Firestore (matching PDF): ${finalSnap.size}`);
   process.exit(0);
 }
 
